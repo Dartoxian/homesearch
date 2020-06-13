@@ -56,7 +56,7 @@ def fetch_and_save_data(county: str, page: int) -> int:
     result_count = parsed["result_count"]
 
     for listing in parsed["listing"]:
-        save_listing(listing)
+        save_listing(county, listing)
     return result_count
 
 
