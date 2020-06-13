@@ -1,5 +1,6 @@
 import math
 import os
+from pathlib import Path
 
 import requests
 import json
@@ -8,7 +9,6 @@ from ratelimit import sleep_and_retry, limits, RateLimitException
 
 from metadata.postcodes import get_counties
 from utils.logging import get_logger
-from utils.sql import get_cursor
 from global_config import ZOOPLA_RAW_DATA_DIR
 
 log = get_logger("zoopla")
@@ -37,13 +37,18 @@ def call_api(qs: str):
     return r
 
 
-def save_listing(listing):
-    f = open(os.path.join(ZOOPLA_RAW_DATA_DIR, f"{listing['listing_id']}.json"), "w")
+def save_listing(location, listing):
+    directory = os.path.join(ZOOPLA_RAW_DATA_DIR, location)
+    Path(directory).mkdir(parents=True, exist_ok=True)
+
+    path = os.path.join(directory, f"{listing['listing_id']}.json")
+    f = open(path, "w")
     f.write(json.dumps(listing))
     f.close()
 
 
-def fetch_and_save_data(parameters: dict) -> int:
+def fetch_and_save_data(county: str, page: int) -> int:
+    parameters = {**base_parameters, "page_number": page, "county": county}
     query_string = "&".join([f"{k}={v}" for (k, v) in parameters.items()])
     r = call_api(query_string)
 
@@ -62,8 +67,7 @@ for county in counties:
     log.info(f"Fetching properties for area {county}")
     page = 1
     while True:
-        parameters = {**base_parameters, "page_number": page, "county": county}
-        result_count = fetch_and_save_data(parameters)
+        result_count = fetch_and_save_data(county, page)
         if result_count > 100 * PAGE_SIZE:
             log.error(f"County {county} has {result_count} results, this is too many to process. Skipping.")
             break
