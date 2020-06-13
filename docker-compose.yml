@@ -1,0 +1,13 @@
+version: '3.2'
+services:
+  db:
+    build:
+      dockerfile: db-backend.dockerfile
+      context: ./
+    ports:
+      - "5432:5432"
+    volumes:
+      # The database can be wiped with sudo -i sh -c 'rm -rf /var/lib/docker/volumes/docker_pgdata/_data/*'
+      - "pgdata:/var/lib/postgresql/data"
+volumes:
+  pgdata:
