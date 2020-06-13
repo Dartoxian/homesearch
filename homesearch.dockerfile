@@ -2,7 +2,7 @@ FROM python:3.7.7-alpine3.11
 
 WORKDIR /homesearch
 
-COPY requirements.txt .
+COPY . .
 
 RUN apk update
 RUN \
