@@ -13,8 +13,6 @@ services:
     build:
       dockerfile: homesearch.dockerfile
       context: ./
-    ports:
-      - "5432:5432"
     volumes:
       # The database can be wiped with sudo -i sh -c 'rm -rf /var/lib/docker/volumes/docker_pgdata/_data/*'
       - "./data:/homesearch/data"
