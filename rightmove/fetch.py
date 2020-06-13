@@ -2,7 +2,6 @@ from concurrent import futures
 import json
 import os
 import re
-import typing as t
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -10,7 +9,6 @@ import requests
 from ratelimit import sleep_and_retry, limits
 
 from global_config import RIGHTMOVE_RAW_DATA_DIR
-from metadata.postcodes import get_counties
 
 import urllib.robotparser as urobot
 
@@ -21,11 +19,9 @@ BASE = "https://www.rightmove.co.uk"
 # this currently the highest valid outcode
 # https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=OUTCODE%5E2926&insId=1&numberOfPropertiesPerPage=24&areaSizeUnit=sqft&googleAnalyticsChannel=buying
 MAX_OUTCODE = 2926
-USER_AGENT = "hmsrch"
+USER_AGENT = "searcher"
 session = requests.Session()
 session.headers.update({"User-Agent": USER_AGENT})
-
-counties = [county for county in get_counties() if county == "Wiltshire"]
 
 rp = urobot.RobotFileParser()
 rp.set_url("https://www.rightmove.co.uk" + "/robots.txt")
@@ -40,20 +36,6 @@ def save_listing(location, listing):
     f = open(path, "w")
     f.write(json.dumps(listing))
     f.close()
-
-
-@sleep_and_retry
-@limits(calls=1, period=3)
-def get_county_region_code(county: str) -> str:
-    search_term = county.upper()
-    search_term = "/".join([search_term[i : i + 2] for i in range(0, len(search_term), 2)])
-    url = "https://www.rightmove.co.uk/typeAhead/uknostreet/" + search_term
-    if not rp.can_fetch(USER_AGENT, url):
-        raise Exception("No longer allowed to fetch country/region code from rightmove")
-    r = session.get(url)
-    if r.status_code != 200:
-        log.error(f"Unable to get region code, got {r.status_code}, body:\n {r.text}")
-    return r.json()["typeAheadLocations"][0]["locationIdentifier"]
 
 
 @sleep_and_retry
