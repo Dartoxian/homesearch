@@ -40,7 +40,7 @@ CREATE INDEX ON properties (property_type, property_value);
 
 CREATE SCHEMA metadata;
 
-CREATE TABLE metadata.postcodes {
+CREATE TABLE metadata.postcodes (
     postcode_id serial PRIMARY KEY,
     postcode text,
     postcode_area text,
@@ -62,4 +62,4 @@ CREATE TABLE metadata.postcodes {
     census_code text,
     constituency_code text,
     UNIQUE(postcode)
-}
+);

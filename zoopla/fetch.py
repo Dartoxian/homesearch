@@ -2,22 +2,16 @@ import math
 import os
 
 import requests
-import logging
-import sys
 import json
 
 from ratelimit import sleep_and_retry, limits, RateLimitException
 
-from zoopla.config import ZOOPLA_RAW_DATA_DIR
+from metadata.postcodes import get_counties
+from utils.logging import get_logger
+from utils.sql import get_cursor
+from global_config import ZOOPLA_RAW_DATA_DIR
 
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
-handler.setFormatter(formatter)
-logging.getLogger().addHandler(handler)
-
-log = logging.getLogger("zoopla")
-log.setLevel(logging.INFO)
+log = get_logger("zoopla")
 
 PAGE_SIZE = 100
 
@@ -33,8 +27,8 @@ base_parameters = {
 
 @sleep_and_retry
 @limits(calls=5, period=180)
-def call_api(query_string):
-    r = requests.get("https://api.zoopla.co.uk/api/v1/property_listings.js?" + query_string)
+def call_api(qs: str):
+    r = requests.get("https://api.zoopla.co.uk/api/v1/property_listings.js?" + qs)
     if r.status_code != 200:
         if "X-Mashery-Error-Code" in r.headers and r.headers["X-Mashery-Error-Code"] == "ERR_403_DEVELOPER_OVER_RATE":
             log.info("We have been rate limited... waiting at least 60 seconds")
@@ -43,20 +37,37 @@ def call_api(query_string):
     return r
 
 
-result_count = 10000000
-page = 1
-while (page - 1) * PAGE_SIZE < result_count:
-    parameters = {**base_parameters, "page_number": page}
+def save_listing(listing):
+    f = open(os.path.join(ZOOPLA_RAW_DATA_DIR, f"{listing['listing_id']}.json"), "w")
+    f.write(json.dumps(listing))
+    f.close()
+
+
+def fetch_and_save_data(parameters: dict) -> int:
     query_string = "&".join([f"{k}={v}" for (k, v) in parameters.items()])
     r = call_api(query_string)
 
-    log.info(f"Made request, status {r.status_code}")
     parsed = r.json()
     result_count = parsed["result_count"]
 
     for listing in parsed["listing"]:
-        f = open(os.path.join(ZOOPLA_RAW_DATA_DIR, f"{listing['listing_id']}.json"), "w")
-        f.write(json.dumps(listing))
-        f.close()
-    log.info(f"Processed page {page} / {math.ceil(result_count/100)} - {100 * 100 * page / result_count}% complete")
-    page += 1
+        save_listing(listing)
+    return result_count
+
+
+counties = get_counties()
+log.info(f"Fetching data for {len(counties)} postcode areas")
+
+for county in counties:
+    log.info(f"Fetching properties for area {county}")
+    page = 1
+    while True:
+        parameters = {**base_parameters, "page_number": page, "county": county}
+        result_count = fetch_and_save_data(parameters)
+        if result_count > 100 * PAGE_SIZE:
+            log.error(f"County {county} has {result_count} results, this is too many to process. Skipping.")
+            break
+        log.info(f"Processed page {page} / {math.ceil(result_count/100)} - {100 * 100 * page / result_count}% complete")
+        if page * PAGE_SIZE > result_count:
+            break
+        page += 1
