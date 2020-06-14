@@ -1,16 +1,16 @@
 import React from 'react'
-import {LatLngBounds} from "leaflet";
-import {Alert, Intent, IToaster, Toaster} from "@blueprintjs/core";
-import L from 'leaflet';
+import {Alert, Colors, Intent, IToaster, Toaster} from "@blueprintjs/core";
 import {getPostcodes} from "../services/postcodes";
-import {getProperties} from "../services/houses";
+import {getProperties, HousePropertyMeta} from "../services/houses";
+import mapboxgl, {GeoJSONSource, GeoJSONSourceRaw, LngLatBounds} from 'mapbox-gl';
+import {Feature, FeatureCollection, Point} from "geojson";
 
 
-const initialPosition: [number, number] = [51.2, -2.09]
+const initialPosition: [number, number] = [-2.15, 51.2]
 
 
 export interface HomesearchMapState {
-    bounds?: LatLngBounds,
+    bounds?: LngLatBounds,
     errors?: string,
     loading?: boolean,
     metadata_postcodes?: any
@@ -31,8 +31,18 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
 
     componentDidMount() {
         this.homesearchMapLeaflet = new HomesearchMapLeaflet(this.mapRef.current, this.handleViewportChanged);
-        const bounds = this.homesearchMapLeaflet.map.getBounds();
-        this.loadDataForBounds(bounds);
+        new Promise(resolve => {
+            const checkLoaded = () => {
+                if (this.homesearchMapLeaflet.map.loaded()) {
+                    return resolve();
+                }
+                setTimeout(checkLoaded, 20);
+            }
+            checkLoaded();
+        }).then(() => {
+            const bounds = this.homesearchMapLeaflet.map.getBounds();
+            this.loadDataForBounds(bounds);
+        });
     }
 
     componentDidUpdate(prevProps: Readonly<{}>, prevState: Readonly<HomesearchMapState>, snapshot?: any) {
@@ -61,13 +71,9 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         }
     }
 
-    loadDataForBounds = (bounds: LatLngBounds, from?: number) => {
+    loadDataForBounds = (bounds: LngLatBounds, from?: number) => {
         getProperties(bounds, from).then((houses) => {
-            this.homesearchMapLeaflet.addPoints(
-                houses.map((it) =>
-                    ({location: [it.location.coordinates[1], it.location.coordinates[0]], id: it.house_id})
-                )
-            );
+            this.homesearchMapLeaflet.addPoints(houses);
             if (houses.length < 5000) {
                 this.setState((state) => ({...state, loading: false}));
             } else {
@@ -79,31 +85,74 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
 }
 
 class HomesearchMapLeaflet {
-    public map: L.Map;
-    private markers: { [postcode: number]: L.CircleMarker } = {};
+    public map: mapboxgl.Map;
+    private existingData: Feature[] = [];
 
     constructor(el: HTMLElement, onViewportChanged: () => void) {
-        this.map = L.map(el, {
-            preferCanvas: true
-        }).setView(initialPosition, 10);
-        this.map.on("dragend", onViewportChanged)
+        this.map = new mapboxgl.Map({
+            container: el,
+            style: 'https://api.maptiler.com/maps/basic/style.json?key=98DzToNTtzoxe8HMYXmL',
+            center: initialPosition,
+            zoom: 9
+        });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(this.map);
+        this.map.on("load", () => {
+            this.map.addSource("points", {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: this.existingData
+                }
+            });
+            this.map.addLayer({
+                id: "points",
+                type: "circle",
+                source: "points",
+                paint: {
+                    'circle-radius': 4,
+                    'circle-color': ["case",
+                        ["<=", ["get", "price"], 100000], Colors.GREEN1,
+                        ["<=", ["get", "price"], 200000], Colors.BLUE1,
+                        ["<=", ["get", "price"], 300000], Colors.BLUE2,
+                        ["<=", ["get", "price"], 400000], Colors.BLUE3,
+                        ["<=", ["get", "price"], 500000], Colors.RED1,
+                        ["<=", ["get", "price"], 600000], Colors.RED3,
+                        Colors.RED5
+                    ],
+                    'circle-stroke-color': 'white',
+                    'circle-stroke-width': 1,
+                    'circle-opacity': 0.7,
+                }
+            });
+        });
+
+        this.map.on("dragend", onViewportChanged);
     }
 
-    public addPoints(locations: { location: [number, number], id: number }[]) {
-        locations.forEach((location) => {
-            if (!this.markers.hasOwnProperty(location.id)) {
-                this.markers[location.id] = L.circle(location.location).addTo(this.map)
-            }
-        });
+    public addPoints(houses: HousePropertyMeta[]) {
+        const source = this.map.getSource("points") as GeoJSONSource;
+        const existingPoints = new Set(this.existingData.map(it => it.properties['id']))
+        this.existingData = [
+            ...this.existingData,
+            ...houses.filter(house => !existingPoints.has(house.house_id)).map((house): Feature => ({
+                type: 'Feature', geometry: house.location, properties: house
+            }))
+        ]
+
+        const data: FeatureCollection = {
+            type: "FeatureCollection",
+            features: this.existingData
+        }
+        source.setData(data);
     }
 
     public clearPoints() {
-        if (this.markers) {
-            Object.values(this.markers).map((marker) => this.map.removeLayer(marker));
+        const source = this.map.getSource("points") as GeoJSONSource;
+        this.existingData = [];
+        const data: FeatureCollection = {
+            type: "FeatureCollection",
+            features: this.existingData
         }
+        source.setData(data);
     }
 }

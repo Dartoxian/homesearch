@@ -1,5 +1,5 @@
 import {Point} from "geojson";
-import {LatLngBounds} from "leaflet";
+import {LngLatBounds} from "mapbox-gl";
 
 export interface HousePropertyMeta {
     house_id: number
@@ -20,7 +20,7 @@ export interface HouseProperty extends HousePropertyMeta {
 }
 
 
-export function getProperties(bounds: LatLngBounds, after?: number): Promise<HousePropertyMeta[]> {
+export function getProperties(bounds: LngLatBounds, after?: number): Promise<HousePropertyMeta[]> {
     return fetch('http://localhost:5000/api/houses', {
         method: 'POST',
         headers: {
