@@ -35,7 +35,7 @@ def get_houses():
         raise BadRequest("A bounding box must be specified to get re")
 
     query = (
-        "SELECT house_id, title, price, ST_AsGeoJSON(location) as location, num_floors,"
+        "SELECT house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
         " num_bedrooms, num_bathrooms FROM houses WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
     )
     params = (request_params["box"],)

@@ -3,6 +3,8 @@ import {LngLatBounds} from "mapbox-gl";
 
 export interface HousePropertyMeta {
     house_id: number
+    title: string
+    primary_image_url: string
     price: number
     location: Point
     num_floors?: number
@@ -12,8 +14,6 @@ export interface HousePropertyMeta {
 
 
 export interface HouseProperty extends HousePropertyMeta {
-    title: string
-    primary_image_url: string
     source: string
     source_url: string
     description: string

@@ -4,6 +4,8 @@ from pydantic import BaseModel
 
 class HousePropertyMeta(BaseModel):
     house_id: int
+    title: str
+    primary_image_url: str
     price: int
     location: t.Tuple[float, float]
     num_floors: t.Optional[int]
@@ -12,8 +14,6 @@ class HousePropertyMeta(BaseModel):
 
 
 class HouseProperty(HousePropertyMeta):
-    title: str
-    primary_image_url: str
     source: str
     source_url: str
     description: str

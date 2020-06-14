@@ -163,7 +163,8 @@ class HomesearchMapLeaflet {
             const self = this;
             this.map.on("click", "points", function (e) {
                 const coordinates = (e.features[0].geometry as Point).coordinates as [number, number];
-                const description = e.features[0].properties.title;
+                const house = e.features[0].properties as HousePropertyMeta;
+                const description = `<div class="property-popup"><div>${house.title}</div><div><b>${house.price}</b></div></div><img src='${house.primary_image_url}'/></div>`;
 
                 // Ensure that if the map is zoomed out such that multiple
                 // copies of the feature are visible, the popup appears
@@ -175,6 +176,7 @@ class HomesearchMapLeaflet {
                 new mapboxgl.Popup()
                     .setLngLat(coordinates)
                     .setHTML(description)
+                    .setMaxWidth("360px")
                     .addTo(self.map);
             })
         });
