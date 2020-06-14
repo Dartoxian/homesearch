@@ -1,8 +1,7 @@
 import React from 'react'
-import {Alert, Colors, Intent, IToaster, Toaster} from "@blueprintjs/core";
-import {getPostcodes} from "../services/postcodes";
-import {getProperties, HousePropertyMeta} from "../services/houses";
-import mapboxgl, {GeoJSONSource, GeoJSONSourceRaw, LngLatBounds} from 'mapbox-gl';
+import {Alert, Card, Colors, FormGroup, HTMLSelect, NumberRange, RangeSlider} from "@blueprintjs/core";
+import {getProperties, HousePropertyFilter, HousePropertyMeta} from "../services/houses";
+import mapboxgl, {GeoJSONSource, LngLatBounds} from 'mapbox-gl';
 import {Feature, FeatureCollection, Point} from "geojson";
 
 
@@ -13,11 +12,9 @@ export interface HomesearchMapState {
     bounds?: LngLatBounds,
     errors?: string,
     loading?: boolean,
-    metadata_postcodes?: any
+
+    filters: HousePropertyFilter,
 }
-
-const toaster = Toaster.create();
-
 
 export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
 
@@ -26,7 +23,12 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
 
     constructor(props) {
         super(props);
-        this.state = {};
+        this.state = {
+            filters: {
+                min_price: 100000,
+                max_price: 300000
+            }
+        };
     }
 
     componentDidMount() {
@@ -40,26 +42,53 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
             }
             checkLoaded();
         }).then(() => {
-            const bounds = this.homesearchMapLeaflet.map.getBounds();
-            this.loadDataForBounds(bounds);
+            this.setState(
+                (state) => ({...state, bounds: this.homesearchMapLeaflet.map.getBounds()}),
+                () => this.loadDataForBounds());
         });
     }
 
     componentDidUpdate(prevProps: Readonly<{}>, prevState: Readonly<HomesearchMapState>, snapshot?: any) {
-        const {bounds} = this.state;
+        const {bounds, filters} = this.state;
         if (bounds !== prevState.bounds) {
-            this.loadDataForBounds(bounds)
+            this.loadDataForBounds();
+            return
+        }
+        if (filters !== prevState.filters) {
+            this.homesearchMapLeaflet.clearPoints();
+            this.loadDataForBounds();
+            return
         }
     }
 
     render() {
-        const {errors} = this.state;
+        const {errors, filters: {min_price, max_price}} = this.state;
+        const price_values = [0, 50000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 275000,
+            300000, 325000, 350000, 375000, 400000, 450000, 500000, 600000, 700000, 800000];
 
         if (errors) return <Alert>Error :( {errors}</Alert>;
 
         return (
             <div className={"map-wrapper"}>
                 <div ref={this.mapRef}/>
+                <Card className={"filters"}>
+                    Here are some filters
+                    <div className={"price-range"}>
+                        <FormGroup
+                            label={"Price Range"}
+                        >
+                            <RangeSlider
+                                min={0}
+                                max={500000}
+                                value={[min_price, max_price]}
+                                labelStepSize={100000}
+                                stepSize={10000}
+                                labelRenderer={price => `${(price/1000).toFixed(0)}k`}
+                                onChange={this.handlePriceRangeChanged}
+                            />
+                        </FormGroup>
+                    </div>
+                </Card>
             </div>
         );
     }
@@ -71,13 +100,20 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         }
     }
 
-    loadDataForBounds = (bounds: LngLatBounds, from?: number) => {
-        getProperties(bounds, from).then((houses) => {
+    handlePriceRangeChanged = (range: NumberRange) => {
+        this.setState((state) => ({
+            ...state, filters: {...state.filters, min_price: range[0], max_price: range[1]}
+        }));
+    }
+
+    loadDataForBounds = (from?: number) => {
+        const {bounds, filters} = this.state;
+        getProperties(bounds, from, filters).then((houses) => {
             this.homesearchMapLeaflet.addPoints(houses);
             if (houses.length < 5000) {
                 this.setState((state) => ({...state, loading: false}));
             } else {
-                this.loadDataForBounds(bounds, houses[houses.length - 1].house_id)
+                this.loadDataForBounds(houses[houses.length - 1].house_id)
             }
         });
         this.setState((state) => ({...state, loading: true}));
@@ -124,6 +160,23 @@ class HomesearchMapLeaflet {
                     'circle-opacity': 0.7,
                 }
             });
+            const self = this;
+            this.map.on("click", "points", function (e) {
+                const coordinates = (e.features[0].geometry as Point).coordinates as [number, number];
+                const description = e.features[0].properties.title;
+
+                // Ensure that if the map is zoomed out such that multiple
+                // copies of the feature are visible, the popup appears
+                // over the copy being pointed to.
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                }
+
+                new mapboxgl.Popup()
+                    .setLngLat(coordinates)
+                    .setHTML(description)
+                    .addTo(self.map);
+            })
         });
 
         this.map.on("dragend", onViewportChanged);

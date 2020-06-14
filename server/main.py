@@ -35,13 +35,21 @@ def get_houses():
         raise BadRequest("A bounding box must be specified to get re")
 
     query = (
-        "SELECT house_id, price, ST_AsGeoJSON(location) as location, num_floors,"
+        "SELECT house_id, title, price, ST_AsGeoJSON(location) as location, num_floors,"
         " num_bedrooms, num_bathrooms FROM houses WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
     )
     params = (request_params["box"],)
-    if request_params and "after" in request_params:
+    if "after" in request_params:
         query += " AND house_id>%s"
         params += (request_params["after"],)
+    if "filters" in request_params:
+        filters = request_params["filters"]
+        if "min_price" in filters:
+            query += " AND price>=%s"
+            params += (filters["min_price"],)
+        if "max_price" in filters:
+            query += " AND price<=%s"
+            params += (filters["max_price"],)
     query += " ORDER BY house_id LIMIT 5000"
 
     cur = get_cursor()

@@ -3,6 +3,25 @@
   width: 100%;
 }
 
+.filters {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  max-width: 400px;
+
+  .price-range {
+    min-width: 300px;
+  }
+
+  .filter-row {
+    display: flex;
+    flex-direction: row;
+    & > *:not(:first-child) {
+      margin-left: 20px;
+    }
+  }
+}
+
 .mapboxgl-map {
   height: 100%;
   width: 100%;

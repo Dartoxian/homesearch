@@ -19,8 +19,12 @@ export interface HouseProperty extends HousePropertyMeta {
     description: string
 }
 
+export interface HousePropertyFilter {
+    min_price?: number;
+    max_price?: number;
+}
 
-export function getProperties(bounds: LngLatBounds, after?: number): Promise<HousePropertyMeta[]> {
+export function getProperties(bounds: LngLatBounds, after?: number, filters?: HousePropertyFilter): Promise<HousePropertyMeta[]> {
     return fetch('http://localhost:5000/api/houses', {
         method: 'POST',
         headers: {
@@ -39,6 +43,7 @@ export function getProperties(bounds: LngLatBounds, after?: number): Promise<Hou
                 ]],
             }),
             after,
+            filters
         })
     })
         .then(r => r.json())
