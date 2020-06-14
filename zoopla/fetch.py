@@ -52,11 +52,15 @@ def fetch_and_save_data(postcode_district: str, page: int) -> int:
     query_string = "&".join([f"{k}={v}" for (k, v) in parameters.items()])
     r = call_api(query_string)
 
-    parsed = r.json()
-    result_count = parsed["result_count"]
+    try:
+        parsed = r.json()
+        result_count = parsed["result_count"]
 
-    for listing in parsed["listing"]:
-        save_listing(postcode_district, listing)
+        for listing in parsed["listing"]:
+            save_listing(postcode_district, listing)
+    except Exception as e:
+        log.exception(f"Unable to process {postcode_district}, page {page}", e)
+        return 0
     return result_count
 
 
