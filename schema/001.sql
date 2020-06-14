@@ -11,32 +11,23 @@ GRANT ALL PRIVILEGES ON DATABASE homesearch TO homesearch;
 GRANT homesearch TO postgres;
 SET ROLE homesearch;
 
-CREATE TABLE IF NOT EXISTS datasources (
-    datasource_id serial PRIMARY KEY,
-    name text,
-    description text,
-    creation_time TIMESTAMP NOT NULL default CURRENT_TIMESTAMP
+CREATE TABLE houses (
+    house_id serial PRIMARY KEY,
+    title text NOT NULL,
+    price integer NOT NULL,
+    location geometry NOT NULL,
+    primary_image_url text NOT NULL,
+    source text NOT NULL,
+    source_url text NOT NULL,
+
+    num_floors integer,
+    num_bedrooms integer,
+    num_bathrooms integer,
+    description text
 );
 
-CREATE TYPE property_type_enum AS ENUM ('title', 'description', 'price');
-
-CREATE TABLE IF NOT EXISTS objects (
-    object_id serial PRIMARY KEY,
-    location geometry
-);
-CREATE INDEX ON objects USING GIST (location);
-
-CREATE TABLE IF NOT EXISTS properties (
-    property_id serial PRIMARY KEY,
-    property_type property_type_enum,
-    property_value jsonb,
-    datasource_id integer REFERENCES datasources ON DELETE CASCADE,
-    object_id integer REFERENCES objects ON DELETE CASCADE
-);
-
-CREATE INDEX ON properties (property_type);
-CREATE INDEX ON properties (property_value);
-CREATE INDEX ON properties (property_type, property_value);
+CREATE INDEX ON houses USING GIST (location);
+CREATE INDEX ON houses (source);
 
 CREATE SCHEMA metadata;
 
@@ -63,3 +54,6 @@ CREATE TABLE metadata.postcodes (
     constituency_code text,
     UNIQUE(postcode)
 );
+
+CREATE INDEX ON metadata.postcodes USING GIST (location);
+CREATE INDEX ON metadata.postcodes (constituency);
