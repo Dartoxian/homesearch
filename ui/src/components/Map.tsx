@@ -1,8 +1,9 @@
 import React from 'react'
-import {Alert, Card, Colors, FormGroup, HTMLSelect, NumberRange, RangeSlider} from "@blueprintjs/core";
+import {Alert, Card, Colors, FormGroup, H3, HTMLSelect, NumberRange, RangeSlider} from "@blueprintjs/core";
 import {getProperties, HousePropertyFilter, HousePropertyMeta} from "../services/houses";
 import mapboxgl, {GeoJSONSource, LngLatBounds} from 'mapbox-gl';
 import {Feature, FeatureCollection, Point} from "geojson";
+import {HouseDetails} from "./HouseDetails";
 
 
 const initialPosition: [number, number] = [-2.15, 51.2]
@@ -14,6 +15,7 @@ export interface HomesearchMapState {
     loading?: boolean,
 
     filters: HousePropertyFilter,
+    selectedHouseId?: number;
 }
 
 export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
@@ -32,7 +34,7 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
     }
 
     componentDidMount() {
-        this.homesearchMapLeaflet = new HomesearchMapLeaflet(this.mapRef.current, this.handleViewportChanged);
+        this.homesearchMapLeaflet = new HomesearchMapLeaflet(this.mapRef.current, this.handleViewportChanged, this.handleHouseSelected);
         new Promise(resolve => {
             const checkLoaded = () => {
                 if (this.homesearchMapLeaflet.map.loaded()) {
@@ -62,7 +64,7 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
     }
 
     render() {
-        const {errors, filters: {min_price, max_price}} = this.state;
+        const {errors, filters: {min_price, max_price}, selectedHouseId} = this.state;
         const price_values = [0, 50000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 275000,
             300000, 325000, 350000, 375000, 400000, 450000, 500000, 600000, 700000, 800000];
 
@@ -71,6 +73,7 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         return (
             <div className={"map-wrapper"}>
                 <div ref={this.mapRef}/>
+                <div className={"overlay-wrappers"}>
                 <Card className={"filters"}>
                     Here are some filters
                     <div className={"price-range"}>
@@ -89,6 +92,10 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
                         </FormGroup>
                     </div>
                 </Card>
+                {selectedHouseId && (
+                    <HouseDetails houseId={selectedHouseId}/>
+                )}
+                </div>
             </div>
         );
     }
@@ -98,6 +105,10 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
             const bounds = this.homesearchMapLeaflet.map.getBounds();
             this.setState((state) => ({...state, bounds}));
         }
+    }
+
+    handleHouseSelected = (houseId: number) => {
+        this.setState((state) => ({...state, selectedHouseId: houseId}));
     }
 
     handlePriceRangeChanged = (range: NumberRange) => {
@@ -124,7 +135,7 @@ class HomesearchMapLeaflet {
     public map: mapboxgl.Map;
     private existingData: Feature[] = [];
 
-    constructor(el: HTMLElement, onViewportChanged: () => void) {
+    constructor(el: HTMLElement, onViewportChanged: () => void, onHouseSelected: (houseId) => void) {
         this.map = new mapboxgl.Map({
             container: el,
             style: 'https://api.maptiler.com/maps/basic/style.json?key=98DzToNTtzoxe8HMYXmL',
@@ -138,14 +149,18 @@ class HomesearchMapLeaflet {
                 data: {
                     type: 'FeatureCollection',
                     features: this.existingData
-                }
+                },
+                generateId: true
             });
             this.map.addLayer({
                 id: "points",
                 type: "circle",
                 source: "points",
                 paint: {
-                    'circle-radius': 4,
+                    'circle-radius': ["case",
+                        ["boolean", ["feature-state", "hover"], false], 8,
+                        4
+                    ],
                     'circle-color': ["case",
                         ["<=", ["get", "price"], 100000], Colors.GREEN1,
                         ["<=", ["get", "price"], 200000], Colors.BLUE1,
@@ -161,24 +176,39 @@ class HomesearchMapLeaflet {
                 }
             });
             const self = this;
+
             this.map.on("click", "points", function (e) {
                 const coordinates = (e.features[0].geometry as Point).coordinates as [number, number];
                 const house = e.features[0].properties as HousePropertyMeta;
-                const description = `<div class="property-popup"><div>${house.title}</div><div><b>${house.price}</b></div></div><img src='${house.primary_image_url}'/></div>`;
+                onHouseSelected(house.house_id);
+            });
 
-                // Ensure that if the map is zoomed out such that multiple
-                // copies of the feature are visible, the popup appears
-                // over the copy being pointed to.
-                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            let hoveredFeatureId: string;
+            this.map.on('mousemove', "points", (e) => {
+                self.map.getCanvas().style.cursor = 'pointer';
+                if (e.features.length === 0) {
+                    return;
                 }
 
-                new mapboxgl.Popup()
-                    .setLngLat(coordinates)
-                    .setHTML(description)
-                    .setMaxWidth("360px")
-                    .addTo(self.map);
-            })
+                if (hoveredFeatureId) {
+                    self.map.removeFeatureState({source: "points", id: hoveredFeatureId});
+                }
+                hoveredFeatureId = e.features[0].id as string;
+
+                self.map.setFeatureState({
+                    source: "points",
+                    id: hoveredFeatureId,
+                }, {
+                    hover: true
+                })
+            });
+            this.map.on('mouseleave', "points", (e) => {
+                self.map.getCanvas().style.cursor = '';
+                if (hoveredFeatureId) {
+                    self.map.removeFeatureState({source: "points", id: hoveredFeatureId});
+                    hoveredFeatureId = null;
+                }
+            });
         });
 
         this.map.on("dragend", onViewportChanged);
@@ -186,7 +216,7 @@ class HomesearchMapLeaflet {
 
     public addPoints(houses: HousePropertyMeta[]) {
         const source = this.map.getSource("points") as GeoJSONSource;
-        const existingPoints = new Set(this.existingData.map(it => it.properties['id']))
+        const existingPoints = new Set(this.existingData.map(it => it.properties.house_id))
         this.existingData = [
             ...this.existingData,
             ...houses.filter(house => !existingPoints.has(house.house_id)).map((house): Feature => ({

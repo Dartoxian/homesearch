@@ -1,5 +1,6 @@
 import {Point} from "geojson";
 import {LngLatBounds} from "mapbox-gl";
+import {HouseDetailsProps} from "../components/HouseDetails";
 
 export interface HousePropertyMeta {
     house_id: number
@@ -51,4 +52,22 @@ export function getProperties(bounds: LngLatBounds, after?: number, filters?: Ho
             ...it,
             location: JSON.parse(it.location),
         })));
+}
+
+export function getHouse(house_id: number): Promise<HouseProperty> {
+    return fetch('http://localhost:5000/api/house', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            house_id
+        })
+    })
+        .then(r => r.json())
+        .then((r) => ({
+            ...r,
+            location: JSON.parse(r.location),
+        }));
 }

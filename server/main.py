@@ -57,5 +57,20 @@ def get_houses():
     return jsonify([dict(row) for row in cur.fetchall()])
 
 
+@app.route("/api/house", methods=["POST"])
+def get_house():
+    request_params = request.json
+    if not request_params or "house_id" not in request_params:
+        raise BadRequest("A house id must be specified to load a particular house")
+
+    cur = get_cursor()
+    cur.execute(
+        "SELECT house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
+        " num_bedrooms, num_bathrooms, source, source_url, description FROM houses WHERE house_id=%s",
+        (request_params["house_id"],),
+    )
+    return jsonify(dict(cur.fetchone()))
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
