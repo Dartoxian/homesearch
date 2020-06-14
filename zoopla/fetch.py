@@ -7,7 +7,7 @@ import json
 
 from ratelimit import sleep_and_retry, limits, RateLimitException
 
-from metadata.postcodes import get_counties
+from metadata.postcodes import get_postcode_districts
 from utils.logging import get_logger
 from global_config import ZOOPLA_RAW_DATA_DIR
 
@@ -47,8 +47,8 @@ def save_listing(location, listing):
     f.close()
 
 
-def fetch_and_save_data(county: str, page: int) -> int:
-    parameters = {**base_parameters, "page_number": page, "county": county}
+def fetch_and_save_data(postcode_district: str, page: int) -> int:
+    parameters = {**base_parameters, "page_number": page, "postcode": postcode_district}
     query_string = "&".join([f"{k}={v}" for (k, v) in parameters.items()])
     r = call_api(query_string)
 
@@ -56,22 +56,24 @@ def fetch_and_save_data(county: str, page: int) -> int:
     result_count = parsed["result_count"]
 
     for listing in parsed["listing"]:
-        save_listing(county, listing)
+        save_listing(postcode_district, listing)
     return result_count
 
 
-counties = get_counties()
-log.info(f"Fetching data for {len(counties)} postcode areas")
+postcode_districts = get_postcode_districts()
+log.info(f"Fetching data for {len(postcode_districts)} postcode areas")
 
-for county in counties:
-    log.info(f"Fetching properties for area {county}")
+for postcode_district in postcode_districts:
+    log.info(f"Fetching properties for area {postcode_district}")
     page = 1
     while True:
-        result_count = fetch_and_save_data(county, page)
+        result_count = fetch_and_save_data(postcode_district, page)
         if result_count > 100 * PAGE_SIZE:
-            log.error(f"County {county} has {result_count} results, this is too many to process. Skipping.")
+            log.error(
+                f"District {postcode_district} has {result_count} results, this is too many to process. Skipping."
+            )
             break
-        log.info(f"Processed page {page} / {math.ceil(result_count/100)} - {100 * 100 * page / result_count}% complete")
+        log.info(f"Processed page {page} / {math.ceil(result_count/100)}")
         if page * PAGE_SIZE > result_count:
             break
         page += 1
