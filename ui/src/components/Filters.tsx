@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {HousePropertyFilter, HouseType, houseTypes} from "../services/houses";
-import {Button, Card, ControlGroup, FormGroup, NumberRange, RangeSlider} from "@blueprintjs/core";
+import {Button, Card, Checkbox, ControlGroup, FormGroup, NumberRange, RangeSlider, Slider} from "@blueprintjs/core";
 import {Intent} from "@blueprintjs/core/lib/esm/common/intent";
 
 export interface FiltersProps {
@@ -9,7 +9,9 @@ export interface FiltersProps {
 }
 
 export interface FiltersState {
-    filters: HousePropertyFilter
+    filters: HousePropertyFilter;
+    convenienceStoreDistanceEnabled: boolean;
+    storeDistanceEnabled: boolean;
 }
 
 export class Filters extends React.Component<FiltersProps, FiltersState> {
@@ -17,13 +19,19 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
     constructor(props: FiltersProps) {
         super(props);
         this.state = {
-            filters: props.initialFilter
+            filters: {
+                ...props.initialFilter
+            },
+            convenienceStoreDistanceEnabled: props.initialFilter.max_distance_to_convenience !== undefined,
+            storeDistanceEnabled: props.initialFilter.max_distance_to_store !== undefined,
         }
     }
 
     render() {
-        const {onFiltersUpdate} = this.props;
-        const {filters: {price, property_types, num_bedrooms}} = this.state;
+        const {
+            filters: {price, property_types, num_bedrooms, max_distance_to_store, max_distance_to_convenience},
+            convenienceStoreDistanceEnabled, storeDistanceEnabled
+        } = this.state;
 
         return (
             <Card className={"filters"}>
@@ -55,6 +63,44 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                         />
                     </FormGroup>
                 </div>
+                <div className={"row"}>
+                    <FormGroup
+                        label={<Checkbox
+                            label={"Distance to convenience store"}
+                            checked={convenienceStoreDistanceEnabled}
+                            onChange={() => this.setState((state) => ({...state, convenienceStoreDistanceEnabled: !convenienceStoreDistanceEnabled}))}
+                        />}
+                    >
+                        <Slider
+                            disabled={!convenienceStoreDistanceEnabled}
+                            min={0}
+                            max={5000}
+                            value={max_distance_to_convenience}
+                            labelStepSize={2500}
+                            stepSize={100}
+                            labelRenderer={price => `${(price/1000).toFixed(1)}k`}
+                            onChange={this.handleMaxDistanceToConvenienceChange}
+                        />
+                    </FormGroup>
+                    <FormGroup
+                        label={<Checkbox
+                            label={"Distance to larger store"}
+                            checked={storeDistanceEnabled}
+                            onChange={() => this.setState((state) => ({...state, storeDistanceEnabled: !storeDistanceEnabled}))}
+                        />}
+                    >
+                        <Slider
+                            disabled={!storeDistanceEnabled}
+                            min={0}
+                            max={10000}
+                            value={max_distance_to_store}
+                            labelStepSize={5000}
+                            stepSize={100}
+                            labelRenderer={price => `${(price/1000).toFixed(1)}k`}
+                            onChange={this.handleMaxDistanceToStoreChange}
+                        />
+                    </FormGroup>
+                </div>
                 <FormGroup
                     label={"Property Type"}
                 >
@@ -73,7 +119,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                     <Button
                         intent={Intent.SUCCESS}
                         text={"Search"}
-                        onClick={() => onFiltersUpdate(this.state.filters)}
+                        onClick={this.handleSubmitNewFilter}
                     />
                 </div>
             </Card>
@@ -111,5 +157,27 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
         this.setState((state) => ({
             ...state, filters: {...state.filters, price: range}
         }));
+    }
+
+    handleMaxDistanceToConvenienceChange = (newValue: number) => {
+        this.setState((state) => ({
+            ...state, filters: {...state.filters, max_distance_to_convenience: newValue}
+        }));
+    }
+    handleMaxDistanceToStoreChange = (newValue: number) => {
+        this.setState((state) => ({
+            ...state, filters: {...state.filters, max_distance_to_store: newValue}
+        }));
+    }
+
+    handleSubmitNewFilter = () => {
+        const {onFiltersUpdate} = this.props;
+        const {filters, convenienceStoreDistanceEnabled, storeDistanceEnabled} = this.state;
+
+        onFiltersUpdate({
+            ...filters,
+            max_distance_to_convenience: convenienceStoreDistanceEnabled ? filters.max_distance_to_convenience : undefined,
+            max_distance_to_store: storeDistanceEnabled ? filters.max_distance_to_store : undefined,
+        })
     }
 }

@@ -53,6 +53,19 @@ def get_houses():
         if "property_types" in filters:
             query += " AND house_type IN %s"
             params += (tuple(filters["property_types"]),)
+        if "max_distance_to_convenience" in filters:
+            query += (
+                " AND EXISTS (SELECT 1 FROM metadata.supermarkets"
+                " WHERE ST_DistanceSphere(metadata.supermarkets.location, houses.location) <= %s)"
+            )
+            params += (filters["max_distance_to_convenience"],)
+        if "max_distance_to_store" in filters:
+            query += (
+                " AND EXISTS (SELECT 1 FROM metadata.supermarkets"
+                " WHERE ST_DistanceSphere(metadata.supermarkets.location, houses.location) <= %s"
+                " AND metadata.supermarkets.location != 'convenience')"
+            )
+            params += (filters["max_distance_to_store"],)
     query += " ORDER BY house_id LIMIT 5000"
 
     cur = get_cursor()

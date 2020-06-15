@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Card, H3, Spinner, H5, Button, H6, HTMLTable} from "@blueprintjs/core";
+import {Card, H3, Spinner, H5, Button, Tabs, Tab} from "@blueprintjs/core";
 import {
     getHouse,
     getNearestSupermarkets,
@@ -8,10 +8,13 @@ import {
     NearbySupermarket
 } from "../services/houses";
 import {IconNames} from "@blueprintjs/icons";
+import {Supermarkets} from "./details/Supermarkets";
+import {Description} from "./details/Description";
 
 export interface HouseDetailsProps {
     houseMeta: HousePropertyMeta;
     onClose: () => void;
+    onFocus: () => void;
 }
 
 export interface HouseDetailsState {
@@ -39,7 +42,7 @@ export class HouseDetails extends React.Component<HouseDetailsProps, HouseDetail
     }
 
     render() {
-        let {house} = this.state;
+        let {house, supermarkets} = this.state;
 
         let content = <Spinner />;
         if (house) {
@@ -48,17 +51,26 @@ export class HouseDetails extends React.Component<HouseDetailsProps, HouseDetail
                     <div className={"header"}><H3><a href={house.source_url} referrerPolicy={"no-referrer"} rel="nofollow noopener noreferrer" target={"_blank"}>
                         {house.title}
                     </a></H3>
-                        <Button
-                            minimal={true}
-                            icon={IconNames.CROSS}
-                            onClick={this.props.onClose}
-                        />
+                        <div className={"controls"}>
+                            <Button
+                                minimal={true}
+                                icon={IconNames.LOCATE}
+                                onClick={this.props.onFocus}
+                            />
+                            <Button
+                                minimal={true}
+                                icon={IconNames.CROSS}
+                                onClick={this.props.onClose}
+                            />
+                        </div>
                     </div>
                     <H5>GBP {house.price.toLocaleString()}</H5>
                     <Card className={"content-wrapper"}>
                         <img src={house.primary_image_url} />
-                        <div>{house.description.split(/([A-Z].*?\.)(?=[A-Z])/).map((it, index) => <p key={index}>{it}</p>)}</div>
-                        {this.renderSupermarkets()}
+                        <Tabs>
+                            <Tab id="description" title="Description" panel={<Description text={!house?undefined:house.description}/>} />
+                            <Tab id="supermarkets" title="Supermarkets" panel={<Supermarkets supermarkets={supermarkets} />} />
+                        </Tabs>
                     </Card>
                 </>
             )
@@ -69,47 +81,6 @@ export class HouseDetails extends React.Component<HouseDetailsProps, HouseDetail
                 {content}
             </Card>
         );
-    }
-
-    renderSupermarkets() {
-        let {supermarkets} = this.state;
-        if (!supermarkets) {
-            return <Spinner />;
-        }
-        return (
-            <div>
-                <H6>Supermarkets</H6>
-                <HTMLTable>
-                    <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Distance</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {supermarkets
-                        .filter(it => {
-                            switch (it.type) {
-                                case "convenience": return it.distance < 1000;
-                                case "store": return it.distance < 2000;
-                                case "supermarket": return it.distance < 2000;
-                                case "hypermarket": return it.distance < 10000;
-                            }
-                        })
-                        .sort((a,b) => a.distance - b.distance)
-                        .map((supermarket, index) => (
-                            <tr key={index}>
-                                <td>{supermarket.name}</td>
-                                <td>{supermarket.type}</td>
-                                <td>{(supermarket.distance / 1000).toFixed(2)}km</td>
-                            </tr>
-                        ))
-                    }
-                    </tbody>
-                </HTMLTable>
-            </div>
-        )
     }
 
     loadHouseDetails = () => {

@@ -31,7 +31,7 @@ CREATE TABLE houses (
     house_type_full text
 );
 
-CREATE INDEX ON houses USING GIST (location);
+CREATE INDEX ON houses USING SPGIST (location);
 CREATE INDEX ON houses (source);
 CREATE INDEX ON houses (price, house_type);
 
@@ -74,5 +74,5 @@ CREATE TABLE metadata.supermarkets (
     location geometry
 );
 
-CREATE INDEX ON metadata.supermarkets USING GIST (location);
+CREATE INDEX ON metadata.supermarkets USING SPGIST (location);
 CREATE INDEX ON metadata.supermarkets (type);

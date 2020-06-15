@@ -1,0 +1,54 @@
+{
+  "name": "homesearch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel src/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dartoxian/homesearch.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Dartoxian/homesearch/issues"
+  },
+  "homepage": "https://github.com/Dartoxian/homesearch#readme",
+  "dependencies": {
+    "@blueprintjs/core": "^3.28.2",
+    "classnames": "^2.2.6",
+    "js-cookie": "^2.2.1",
+    "leaflet": "^1.6.0",
+    "mapbox-gl": "^1.11.0",
+    "mapbox-gl-leaflet": "0.0.12",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.7",
+    "@types/js-cookie": "^2.2.6",
+    "@types/mapbox-gl": "^1.10.4",
+    "@types/mapbox-gl-leaflet": "0.0.1",
+    "@types/react": "^16.9.36",
+    "@types/react-dom": "^16.9.8",
+    "parcel-bundler": "^1.12.4",
+    "parcel-plugin-static-files-copy": "^2.4.3",
+    "sass": "^1.26.8",
+    "typescript": "^3.9.5"
+  },
+  "browserslist": {
+    "production": [
+      "last 3 chrome versions",
+      "last 3 firefox versions",
+      "last 3 safari versions"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

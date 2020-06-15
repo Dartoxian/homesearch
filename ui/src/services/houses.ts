@@ -46,6 +46,8 @@ export interface HousePropertyFilter {
     price: [number, number];
     property_types?: HouseType[];
     num_bedrooms: [number, number];
+    max_distance_to_convenience?: number;
+    max_distance_to_store?: number;
 }
 
 export function getProperties(bounds: LngLatBounds, after?: number, filters?: HousePropertyFilter): Promise<HousePropertyMeta[]> {
