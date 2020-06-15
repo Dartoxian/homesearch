@@ -1,6 +1,8 @@
 import {Point} from "geojson";
 import {LngLatBounds} from "mapbox-gl";
 
+const BASE_URL = "http://localhost:5000";
+
 export type HouseType = 'unknown' | 'flat' | 'detached' | 'bungalow' | 'semi_detached' | 'land' | 'terraced';
 export const houseTypes: HouseType[] = ['unknown' , 'flat' , 'detached' , 'bungalow' , 'semi_detached' , 'land' , 'terraced']
 
@@ -51,7 +53,7 @@ export interface HousePropertyFilter {
 }
 
 export function getProperties(bounds: LngLatBounds, after?: number, filters?: HousePropertyFilter): Promise<HousePropertyMeta[]> {
-    return fetch('http://localhost:5000/api/houses', {
+    return fetch(BASE_URL + '/api/houses', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -80,7 +82,7 @@ export function getProperties(bounds: LngLatBounds, after?: number, filters?: Ho
 }
 
 export function getHouse(house_id: number): Promise<HouseProperty> {
-    return fetch('http://localhost:5000/api/house', {
+    return fetch(BASE_URL + '/api/house', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -98,7 +100,7 @@ export function getHouse(house_id: number): Promise<HouseProperty> {
 }
 
 export function getSupermarkets(bounds: LngLatBounds, after?: number): Promise<Supermarket[]> {
-    return fetch('http://localhost:5000/api/supermarkets', {
+    return fetch(BASE_URL + '/api/supermarkets', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -126,7 +128,7 @@ export function getSupermarkets(bounds: LngLatBounds, after?: number): Promise<S
 }
 
 export function getNearestSupermarkets(point: Point): Promise<NearbySupermarket[]> {
-    return fetch('http://localhost:5000/api/nearest_supermarkets', {
+    return fetch(BASE_URL + '/api/nearest_supermarkets', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
