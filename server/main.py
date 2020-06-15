@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, jsonify, request, make_response, Request, Response
 from flask_cors import CORS
 from werkzeug.exceptions import BadRequest
@@ -118,7 +120,7 @@ def get_nearest_supermarkets():
         "SELECT supermarket_id, retailer, name, type, ST_DistanceSphere(location, ST_GeomFromGeoJSON(%s)) as distance"
         " FROM metadata.supermarkets WHERE ST_DistanceSphere(location, ST_GeomFromGeoJSON(%s)) <= 10000"
     )
-    params = (request_params["point"], request_params["point"])
+    params = (json.dumps(request_params["point"]), json.dumps(request_params["point"]))
     cur = get_cursor()
     cur.execute(query, params)
     return jsonify([dict(row) for row in cur.fetchall()])
