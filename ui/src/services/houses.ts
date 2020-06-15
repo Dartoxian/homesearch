@@ -1,6 +1,8 @@
 import {Point} from "geojson";
 import {LngLatBounds} from "mapbox-gl";
-import {HouseDetailsProps} from "../components/HouseDetails";
+
+export type HouseType = 'unknown' | 'flat' | 'detached' | 'bungalow' | 'semi_detached' | 'land' | 'terraced';
+export const houseTypes: HouseType[] = ['unknown' , 'flat' , 'detached' , 'bungalow' , 'semi_detached' , 'land' , 'terraced']
 
 export interface HousePropertyMeta {
     house_id: number
@@ -11,6 +13,7 @@ export interface HousePropertyMeta {
     num_floors?: number
     num_bedrooms?: number
     num_bathrooms?: number
+    house_type?: HouseType
 }
 
 
@@ -18,11 +21,13 @@ export interface HouseProperty extends HousePropertyMeta {
     source: string
     source_url: string
     description: string
+    house_type_full: string
 }
 
 export interface HousePropertyFilter {
-    min_price?: number;
-    max_price?: number;
+    price: [number, number];
+    property_types?: HouseType[];
+    num_bedrooms: [number, number];
 }
 
 export function getProperties(bounds: LngLatBounds, after?: number, filters?: HousePropertyFilter): Promise<HousePropertyMeta[]> {

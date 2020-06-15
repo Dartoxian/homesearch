@@ -36,7 +36,7 @@ def get_houses():
 
     query = (
         "SELECT house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms FROM houses WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
+        " num_bedrooms, num_bathrooms, source FROM houses WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
     )
     params = (request_params["box"],)
     if "after" in request_params:
@@ -44,12 +44,15 @@ def get_houses():
         params += (request_params["after"],)
     if "filters" in request_params:
         filters = request_params["filters"]
-        if "min_price" in filters:
-            query += " AND price>=%s"
-            params += (filters["min_price"],)
-        if "max_price" in filters:
-            query += " AND price<=%s"
-            params += (filters["max_price"],)
+        if "price" in filters:
+            query += " AND price<=%s AND price>=%s"
+            params += (filters["price"][1], filters["price"][0])
+        if "num_bedrooms" in filters:
+            query += " AND num_bedrooms<=%s AND num_bedrooms>=%s"
+            params += (filters["num_bedrooms"][1], filters["num_bedrooms"][0])
+        if "property_types" in filters:
+            query += " AND house_type IN %s"
+            params += (tuple(filters["property_types"]),)
     query += " ORDER BY house_id LIMIT 5000"
 
     cur = get_cursor()

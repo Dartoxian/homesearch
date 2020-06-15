@@ -4,6 +4,7 @@ import {getProperties, HousePropertyFilter, HousePropertyMeta} from "../services
 import mapboxgl, {GeoJSONSource, LngLatBounds} from 'mapbox-gl';
 import {Feature, FeatureCollection, Point} from "geojson";
 import {HouseDetails} from "./HouseDetails";
+import {Filters} from "./Filters";
 
 
 const initialPosition: [number, number] = [-2.15, 51.2]
@@ -27,8 +28,8 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         super(props);
         this.state = {
             filters: {
-                min_price: 100000,
-                max_price: 300000
+                price: [100000, 300000],
+                num_bedrooms: [1, 3],
             }
         };
     }
@@ -64,9 +65,7 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
     }
 
     render() {
-        const {errors, filters: {min_price, max_price}, selectedHouseId} = this.state;
-        const price_values = [0, 50000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 275000,
-            300000, 325000, 350000, 375000, 400000, 450000, 500000, 600000, 700000, 800000];
+        const {errors, filters, selectedHouseId} = this.state;
 
         if (errors) return <Alert>Error :( {errors}</Alert>;
 
@@ -74,26 +73,9 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
             <div className={"map-wrapper"}>
                 <div ref={this.mapRef}/>
                 <div className={"overlay-wrappers"}>
-                <Card className={"filters"}>
-                    Here are some filters
-                    <div className={"price-range"}>
-                        <FormGroup
-                            label={"Price Range"}
-                        >
-                            <RangeSlider
-                                min={0}
-                                max={500000}
-                                value={[min_price, max_price]}
-                                labelStepSize={100000}
-                                stepSize={10000}
-                                labelRenderer={price => `${(price/1000).toFixed(0)}k`}
-                                onChange={this.handlePriceRangeChanged}
-                            />
-                        </FormGroup>
-                    </div>
-                </Card>
+                <Filters initialFilter={filters} onFiltersUpdate={(filters) => this.setState((state) => ({...state, filters}))}/>
                 {selectedHouseId && (
-                    <HouseDetails houseId={selectedHouseId}/>
+                    <HouseDetails houseId={selectedHouseId} onClose={() => this.setState((state) => ({...state, selectedHouseId: undefined}))}/>
                 )}
                 </div>
             </div>
@@ -109,12 +91,6 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
 
     handleHouseSelected = (houseId: number) => {
         this.setState((state) => ({...state, selectedHouseId: houseId}));
-    }
-
-    handlePriceRangeChanged = (range: NumberRange) => {
-        this.setState((state) => ({
-            ...state, filters: {...state.filters, min_price: range[0], max_price: range[1]}
-        }));
     }
 
     loadDataForBounds = (from?: number) => {
@@ -175,6 +151,12 @@ class HomesearchMapLeaflet {
                     'circle-opacity': 0.7,
                 }
             });
+            this.map.setPaintProperty("points", "circle-color", [
+                "case",
+                ["==", ["get", "source"], "Zoopla"], Colors.VIOLET1,
+                ["==", ["get", "source"], "RightMove"], Colors.GREEN1,
+                Colors.RED5
+            ])
             const self = this;
 
             this.map.on("click", "points", function (e) {

@@ -26,6 +26,7 @@ services:
     volumes:
       - "./data:/homesearch/data"
       - "./server:/homesearch/server:ro"
+      - "./rightmove:/homesearch/rightmove:ro"
       - "./zoopla:/homesearch/zoopla:ro"
       - "./utils:/homesearch/utils:ro"
       - "./metadata:/homesearch/metadata:ro"

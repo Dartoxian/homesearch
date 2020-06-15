@@ -1,9 +1,11 @@
 import * as React from 'react';
-import {Card, H3, Spinner, H5} from "@blueprintjs/core";
+import {Card, H3, Spinner, H5, Button} from "@blueprintjs/core";
 import {getHouse, HouseProperty} from "../services/houses";
+import {IconNames} from "@blueprintjs/icons";
 
 export interface HouseDetailsProps {
     houseId: number;
+    onClose: () => void;
 }
 
 export interface HouseDetailsState {
@@ -33,14 +35,22 @@ export class HouseDetails extends React.Component<HouseDetailsProps, HouseDetail
         let content = <Spinner />;
         if (house) {
             content = (
-                <div>
-                    <H3><a href={house.source_url} referrerPolicy={"no-referrer"} rel="nofollow noopener noreferrer" target={"_blank"}>
+                <>
+                    <div className={"header"}><H3><a href={house.source_url} referrerPolicy={"no-referrer"} rel="nofollow noopener noreferrer" target={"_blank"}>
                         {house.title}
                     </a></H3>
+                        <Button
+                            minimal={true}
+                            icon={IconNames.CROSS}
+                            onClick={this.props.onClose}
+                        />
+                    </div>
                     <H5>GBP {house.price.toLocaleString()}</H5>
-                    <img src={house.primary_image_url} />
-                    <div>{house.description.split(/([A-Z].*?\.)(?=[A-Z])/).map((it, index) => <p key={index}>{it}</p>)}</div>
-                </div>
+                    <Card className={"content-wrapper"}>
+                        <img src={house.primary_image_url} />
+                        <div>{house.description.split(/([A-Z].*?\.)(?=[A-Z])/).map((it, index) => <p key={index}>{it}</p>)}</div>
+                    </Card>
+                </>
             )
         }
 
