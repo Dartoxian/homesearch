@@ -24,6 +24,24 @@ export interface HouseProperty extends HousePropertyMeta {
     house_type_full: string
 }
 
+export type SupermarketType = 'hypermarket'| 'supermarket'| 'store'| 'convenience'| 'unknown';
+
+export interface Supermarket {
+    supermarket_id: number;
+    retailer: string;
+    name: string;
+    type: SupermarketType;
+    location: Point;
+}
+
+export interface NearbySupermarket {
+    supermarket_id: number;
+    retailer: string;
+    name: string;
+    type: SupermarketType;
+    distance: number;
+}
+
 export interface HousePropertyFilter {
     price: [number, number];
     property_types?: HouseType[];
@@ -75,4 +93,46 @@ export function getHouse(house_id: number): Promise<HouseProperty> {
             ...r,
             location: JSON.parse(r.location),
         }));
+}
+
+export function getSupermarkets(bounds: LngLatBounds, after?: number): Promise<Supermarket[]> {
+    return fetch('http://localhost:5000/api/supermarkets', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            box: JSON.stringify({
+                "type": "Polygon",
+                "coordinates": [[
+                    [bounds.getWest(), bounds.getSouth()],
+                    [bounds.getWest(), bounds.getNorth()],
+                    [bounds.getEast(), bounds.getNorth()],
+                    [bounds.getEast(), bounds.getSouth()],
+                    [bounds.getWest(), bounds.getSouth()],
+                ]],
+            }),
+            after
+        })
+    })
+        .then(r => r.json())
+        .then((r) => r.map(it => ({
+            ...it,
+            location: JSON.parse(it.location),
+        })));
+}
+
+export function getNearestSupermarkets(point: Point): Promise<NearbySupermarket[]> {
+    return fetch('http://localhost:5000/api/nearest_supermarkets', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            point
+        })
+    })
+        .then(r => r.json());
 }

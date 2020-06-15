@@ -1,15 +1,22 @@
 import * as React from 'react';
-import {Card, H3, Spinner, H5, Button} from "@blueprintjs/core";
-import {getHouse, HouseProperty} from "../services/houses";
+import {Card, H3, Spinner, H5, Button, H6, HTMLTable} from "@blueprintjs/core";
+import {
+    getHouse,
+    getNearestSupermarkets,
+    HouseProperty,
+    HousePropertyMeta,
+    NearbySupermarket
+} from "../services/houses";
 import {IconNames} from "@blueprintjs/icons";
 
 export interface HouseDetailsProps {
-    houseId: number;
+    houseMeta: HousePropertyMeta;
     onClose: () => void;
 }
 
 export interface HouseDetailsState {
     house?: HouseProperty;
+    supermarkets?: NearbySupermarket[];
 }
 
 export class HouseDetails extends React.Component<HouseDetailsProps, HouseDetailsState> {
@@ -20,12 +27,14 @@ export class HouseDetails extends React.Component<HouseDetailsProps, HouseDetail
     }
 
     componentDidMount() {
-        this.loadHouseDetails()
+        this.loadHouseDetails();
+        this.loadNearbySupermarkets();
     }
 
     componentDidUpdate(prevProps: Readonly<HouseDetailsProps>, prevState: Readonly<HouseDetailsState>, snapshot?: any) {
-        if (prevProps.houseId !== this.props.houseId) {
+        if (prevProps.houseMeta !== this.props.houseMeta) {
             this.loadHouseDetails();
+            this.loadNearbySupermarkets();
         }
     }
 
@@ -49,6 +58,7 @@ export class HouseDetails extends React.Component<HouseDetailsProps, HouseDetail
                     <Card className={"content-wrapper"}>
                         <img src={house.primary_image_url} />
                         <div>{house.description.split(/([A-Z].*?\.)(?=[A-Z])/).map((it, index) => <p key={index}>{it}</p>)}</div>
+                        {this.renderSupermarkets()}
                     </Card>
                 </>
             )
@@ -61,10 +71,58 @@ export class HouseDetails extends React.Component<HouseDetailsProps, HouseDetail
         );
     }
 
+    renderSupermarkets() {
+        let {supermarkets} = this.state;
+        if (!supermarkets) {
+            return <Spinner />;
+        }
+        return (
+            <div>
+                <H6>Supermarkets</H6>
+                <HTMLTable>
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Distance</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {supermarkets
+                        .filter(it => {
+                            switch (it.type) {
+                                case "convenience": return it.distance < 1000;
+                                case "store": return it.distance < 2000;
+                                case "supermarket": return it.distance < 2000;
+                                case "hypermarket": return it.distance < 10000;
+                            }
+                        })
+                        .sort((a,b) => a.distance - b.distance)
+                        .map((supermarket, index) => (
+                            <tr key={index}>
+                                <td>{supermarket.name}</td>
+                                <td>{supermarket.type}</td>
+                                <td>{(supermarket.distance / 1000).toFixed(2)}km</td>
+                            </tr>
+                        ))
+                    }
+                    </tbody>
+                </HTMLTable>
+            </div>
+        )
+    }
+
     loadHouseDetails = () => {
-        const {houseId} = this.props;
+        const {houseMeta} = this.props;
         this.setState((state) => ({...state, house: undefined}));
-        getHouse(houseId)
+        getHouse(houseMeta.house_id)
             .then((house) => this.setState((state) => ({...state, house})))
+    }
+
+    loadNearbySupermarkets = () => {
+        const {houseMeta} = this.props;
+        this.setState((state) => ({...state, supermarkets: undefined}));
+        getNearestSupermarkets(houseMeta.location)
+            .then((supermarkets) => this.setState((state) => ({...state, supermarkets})))
     }
 }

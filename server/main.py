@@ -32,7 +32,7 @@ def get_postcodes():
 def get_houses():
     request_params = request.json
     if not request_params or "box" not in request_params:
-        raise BadRequest("A bounding box must be specified to get re")
+        raise BadRequest("A bounding box must be specified to get houses")
 
     query = (
         "SELECT house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
@@ -73,6 +73,42 @@ def get_house():
         (request_params["house_id"],),
     )
     return jsonify(dict(cur.fetchone()))
+
+
+@app.route("/api/supermarkets", methods=["POST"])
+def get_supermarkets():
+    request_params = request.json
+    if not request_params or "box" not in request_params:
+        raise BadRequest("A bounding box must be specified to get supermarkets")
+
+    query = (
+        "SELECT supermarket_id, retailer, name, type, ST_AsGeoJSON(location) as location"
+        " FROM metadata.supermarkets WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
+    )
+    params = (request_params["box"],)
+    if "after" in request_params:
+        query += " AND supermarket_id>%s"
+        params += (request_params["after"],)
+    query += " ORDER BY supermarket_id LIMIT 5000"
+    cur = get_cursor()
+    cur.execute(query, params)
+    return jsonify([dict(row) for row in cur.fetchall()])
+
+
+@app.route("/api/nearest_supermarkets", methods=["POST"])
+def get_nearest_supermarkets():
+    request_params = request.json
+    if not request_params or "point" not in request_params:
+        raise BadRequest("A point must be specified to get nearby supermarkets")
+
+    query = (
+        "SELECT supermarket_id, retailer, name, type, ST_DistanceSphere(location, ST_GeomFromGeoJSON(%s)) as distance"
+        " FROM metadata.supermarkets WHERE ST_DistanceSphere(location, ST_GeomFromGeoJSON(%s)) <= 10000"
+    )
+    params = (request_params["point"], request_params["point"])
+    cur = get_cursor()
+    cur.execute(query, params)
+    return jsonify([dict(row) for row in cur.fetchall()])
 
 
 if __name__ == "__main__":

@@ -63,3 +63,16 @@ CREATE TABLE metadata.postcodes (
 
 CREATE INDEX ON metadata.postcodes USING GIST (location);
 CREATE INDEX ON metadata.postcodes (constituency);
+
+CREATE TYPE metadata.supermarket_type AS ENUM ('hypermarket', 'supermarket', 'store', 'convenience', 'unknown');
+
+CREATE TABLE metadata.supermarkets (
+    supermarket_id serial PRIMARY KEY,
+    retailer text,
+    name text,
+    type metadata.supermarket_type,
+    location geometry
+);
+
+CREATE INDEX ON metadata.supermarkets USING GIST (location);
+CREATE INDEX ON metadata.supermarkets (type);
