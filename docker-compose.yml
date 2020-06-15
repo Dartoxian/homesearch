@@ -6,8 +6,6 @@ services:
       context: ./
     environment:
       - POSTGRES_PASSWORD=postgrespwd
-    ports:
-      - "5432:5432"
     volumes:
       # The database can be wiped with sudo -i sh -c 'rm -rf /var/lib/docker/volumes/docker_pgdata/_data/*'
       - "pgdata:/var/lib/postgresql/data"
@@ -30,5 +28,15 @@ services:
       - "./zoopla:/homesearch/zoopla:ro"
       - "./utils:/homesearch/utils:ro"
       - "./metadata:/homesearch/metadata:ro"
+  ui:
+    build:
+      context: ./ui
+    ports:
+      - "1234:1234"
+    volumes:
+      - ./ui/src:/ui/src
+      - /ui/node_modules
+      - /ui/dist
+      - /ui/.cache
 volumes:
   pgdata:
