@@ -17,7 +17,6 @@ PAGE_SIZE = 100
 
 base_parameters = {
     "api_key": "sx38rgtep6437xsfbccpg8du",
-    "country": "England",
     "page_size": PAGE_SIZE,
     "listing_status": "sale",
     "order_by": "age",
@@ -69,6 +68,10 @@ log.info(f"Fetching data for {len(postcode_districts)} postcode areas")
 
 for postcode_district in postcode_districts:
     log.info(f"Fetching properties for area {postcode_district}")
+    if os.path.exists(os.path.join(ZOOPLA_RAW_DATA_DIR, postcode_district)):
+        log.info(f"It looks like we've already fetched {postcode_district}, skipping for now.")
+        continue
+
     page = 1
     while True:
         result_count = fetch_and_save_data(postcode_district, page)

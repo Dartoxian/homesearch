@@ -13,6 +13,6 @@ def get_postcode_districts() -> t.List[str]:
     cur = get_cursor()
     cur.execute(
         "SELECT DISTINCT postcode_district FROM metadata.postcodes"
-        " WHERE country='England' AND postcode_district != ''"
+        " WHERE postcode_district != '' ORDER BY postcode_district"
     )
     return [row["postcode_district"] for row in cur.fetchall()]
