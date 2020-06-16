@@ -50,6 +50,14 @@ export interface HousePropertyFilter {
     num_bedrooms: [number, number];
     max_distance_to_convenience?: number;
     max_distance_to_store?: number;
+    max_distance_to_surgery?: number;
+}
+
+export interface NhsSurgery {
+    surgery_id: number;
+    external_id: string;
+    name: string;
+    location: Point;
 }
 
 export function getProperties(bounds: LngLatBounds, after?: number, filters?: HousePropertyFilter): Promise<HousePropertyMeta[]> {
@@ -139,4 +147,32 @@ export function getNearestSupermarkets(point: Point): Promise<NearbySupermarket[
         })
     })
         .then(r => r.json());
+}
+
+export function getSurgeries(bounds: LngLatBounds, after?: number): Promise<NhsSurgery[]> {
+    return fetch(BASE_URL + '/api/nhs-surgeries', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            box: JSON.stringify({
+                "type": "Polygon",
+                "coordinates": [[
+                    [bounds.getWest(), bounds.getSouth()],
+                    [bounds.getWest(), bounds.getNorth()],
+                    [bounds.getEast(), bounds.getNorth()],
+                    [bounds.getEast(), bounds.getSouth()],
+                    [bounds.getWest(), bounds.getSouth()],
+                ]],
+            }),
+            after
+        })
+    })
+        .then(r => r.json())
+        .then((r) => r.map(it => ({
+            ...it,
+            location: JSON.parse(it.location),
+        })));
 }

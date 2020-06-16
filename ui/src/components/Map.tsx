@@ -1,6 +1,13 @@
 import React from 'react'
 import {Alert, Classes, Colors, Icon, Intent, Spinner, Toast, Toaster} from "@blueprintjs/core";
-import {getProperties, getSupermarkets, HousePropertyFilter, HousePropertyMeta, Supermarket} from "../services/houses";
+import {
+    getProperties,
+    getSupermarkets,
+    getSurgeries,
+    HousePropertyFilter,
+    HousePropertyMeta, NhsSurgery,
+    Supermarket
+} from "../services/houses";
 import mapboxgl, {GeoJSONSource, LngLat, LngLatBounds, LngLatLike} from 'mapbox-gl';
 import {Feature, FeatureCollection, Point} from "geojson";
 import {HouseDetails} from "./HouseDetails";
@@ -32,8 +39,6 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
             filters: {
                 price:  [100000, 300000],
                 num_bedrooms: [1, 3],
-                max_distance_to_convenience: 1500,
-                max_distance_to_store: 5000,
                 ...(Cookies.get("filters") ? JSON.parse(Cookies.get("filters")) : {})
             }
         };
@@ -122,6 +127,7 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
     loadDataForBounds = () => {
         this.loadPropertyDataForBounds();
         this.loadSupermarketDataForBounds();
+        this.loadSurgeriesForBounds();
         this.setState((state) => ({...state, loading: true}));
     }
 
@@ -146,12 +152,23 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
             }
         });
     }
+
+    loadSurgeriesForBounds = (from?: number) => {
+        const {bounds} = this.state;
+        getSurgeries(bounds).then((surgeries) => {
+            this.homesearchMapLeaflet.addSurgeries(surgeries);
+            if (surgeries.length == 5000) {
+                this.loadSupermarketDataForBounds(surgeries[surgeries.length - 1].surgery_id)
+            }
+        });
+    }
 }
 
 class HomesearchMapLeaflet {
     public map: mapboxgl.Map;
     private existingData: Feature[] = [];
     private existingSupermarkets: Feature[] = [];
+    private existingSurgeries: Feature[] = [];
 
     constructor(el: HTMLElement, initialPosition: LngLat, initialZoom: number, onViewportChanged: () => void, onHouseSelected: (house: HousePropertyMeta) => void) {
         this.map = new mapboxgl.Map({
@@ -169,7 +186,7 @@ class HomesearchMapLeaflet {
                 type: 'geojson',
                 data: {
                     type: 'FeatureCollection',
-                    features: this.existingSupermarkets,
+                    features: this.existingData,
                 },
                 generateId: true
             });
@@ -177,7 +194,15 @@ class HomesearchMapLeaflet {
                 type: 'geojson',
                 data: {
                     type: 'FeatureCollection',
-                    features: this.existingData
+                    features: this.existingSupermarkets
+                },
+                generateId: true
+            });
+            this.map.addSource("nhs-surgery", {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: this.existingSurgeries
                 },
                 generateId: true
             });
@@ -207,8 +232,16 @@ class HomesearchMapLeaflet {
                     'icon-size': 0.5,
                     "icon-allow-overlap": true,
                 },
-                paint: {
-                    "icon-halo-blur": 3,
+                minzoom: 13
+            });
+            this.map.addLayer({
+                id: "nhs-surgery",
+                type: "symbol",
+                source: "nhs-surgery",
+                'layout': {
+                    'icon-image': "nhs",
+                    'icon-size': 0.5,
+                    "icon-allow-overlap": true,
                 },
                 minzoom: 13
             });
@@ -283,7 +316,8 @@ class HomesearchMapLeaflet {
     private loadImages = () => {
         const self = this;
         ['aldi', 'asda', 'booths', 'budgens', 'costco', 'iceland', 'lidl', 'makro', 'mands',
-            'morrisons', 'sainsburys', 'tesco', 'the-coop', 'waitrose', 'store'
+            'morrisons', 'sainsburys', 'tesco', 'the-coop', 'waitrose', 'store',
+            'nhs',
         ].forEach((retailer) => {
             this.map.loadImage(
                 `/${retailer}.png`,
@@ -324,6 +358,23 @@ class HomesearchMapLeaflet {
         const data: FeatureCollection = {
             type: "FeatureCollection",
             features: this.existingSupermarkets
+        }
+        source.setData(data);
+    }
+
+    public addSurgeries(surgeries: NhsSurgery[]) {
+        const source = this.map.getSource("nhs-surgery") as GeoJSONSource;
+        const existingPoints = new Set(this.existingSupermarkets.map(it => it.properties.supermarket_id))
+        this.existingSurgeries = [
+            ...this.existingSurgeries,
+            ...surgeries.filter(surgery => !existingPoints.has(surgery.surgery_id)).map((surgery): Feature => ({
+                type: 'Feature', geometry: surgery.location, properties: surgery
+            }))
+        ]
+
+        const data: FeatureCollection = {
+            type: "FeatureCollection",
+            features: this.existingSurgeries
         }
         source.setData(data);
     }

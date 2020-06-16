@@ -12,6 +12,7 @@ export interface FiltersState {
     filters: HousePropertyFilter;
     convenienceStoreDistanceEnabled: boolean;
     storeDistanceEnabled: boolean;
+    surgeryDistanceEnabled: boolean;
 }
 
 export class Filters extends React.Component<FiltersProps, FiltersState> {
@@ -24,13 +25,16 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
             },
             convenienceStoreDistanceEnabled: props.initialFilter.max_distance_to_convenience !== undefined,
             storeDistanceEnabled: props.initialFilter.max_distance_to_store !== undefined,
+            surgeryDistanceEnabled: props.initialFilter.max_distance_to_surgery !== undefined,
         }
     }
 
     render() {
         const {
-            filters: {price, property_types, num_bedrooms, max_distance_to_store, max_distance_to_convenience},
-            convenienceStoreDistanceEnabled, storeDistanceEnabled
+            filters: {
+                price, property_types, num_bedrooms, max_distance_to_store, max_distance_to_convenience, max_distance_to_surgery
+            },
+            convenienceStoreDistanceEnabled, storeDistanceEnabled, surgeryDistanceEnabled
         } = this.state;
 
         return (
@@ -46,7 +50,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             value={price}
                             labelStepSize={250000}
                             stepSize={10000}
-                            labelRenderer={price => `${(price/1000).toFixed(0)}k`}
+                            labelRenderer={price => `${(price / 1000).toFixed(0)}k`}
                             onChange={this.handlePriceRangeChanged}
                         />
                     </FormGroup>
@@ -59,7 +63,10 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             value={num_bedrooms}
                             labelStepSize={1}
                             stepSize={1}
-                            onChange={(range) => this.setState((state) => ({...state, filters: {...state.filters, num_bedrooms: range}}))}
+                            onChange={(range) => this.setState((state) => ({
+                                ...state,
+                                filters: {...state.filters, num_bedrooms: range}
+                            }))}
                         />
                     </FormGroup>
                 </div>
@@ -68,7 +75,10 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                         label={<Checkbox
                             label={"Distance to convenience store"}
                             checked={convenienceStoreDistanceEnabled}
-                            onChange={() => this.setState((state) => ({...state, convenienceStoreDistanceEnabled: !convenienceStoreDistanceEnabled}))}
+                            onChange={() => this.setState((state) => ({
+                                ...state,
+                                convenienceStoreDistanceEnabled: !convenienceStoreDistanceEnabled
+                            }))}
                         />}
                     >
                         <Slider
@@ -78,7 +88,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             value={max_distance_to_convenience}
                             labelStepSize={2500}
                             stepSize={100}
-                            labelRenderer={price => `${(price/1000).toFixed(1)}k`}
+                            labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
                             onChange={this.handleMaxDistanceToConvenienceChange}
                         />
                     </FormGroup>
@@ -86,7 +96,10 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                         label={<Checkbox
                             label={"Distance to larger store"}
                             checked={storeDistanceEnabled}
-                            onChange={() => this.setState((state) => ({...state, storeDistanceEnabled: !storeDistanceEnabled}))}
+                            onChange={() => this.setState((state) => ({
+                                ...state,
+                                storeDistanceEnabled: !storeDistanceEnabled
+                            }))}
                         />}
                     >
                         <Slider
@@ -96,8 +109,31 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             value={max_distance_to_store}
                             labelStepSize={5000}
                             stepSize={100}
-                            labelRenderer={price => `${(price/1000).toFixed(1)}k`}
+                            labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
                             onChange={this.handleMaxDistanceToStoreChange}
+                        />
+                    </FormGroup>
+                </div>
+                <div className={"row"}>
+                    <FormGroup
+                        label={<Checkbox
+                            label={"Distance to nearest NHS surgery"}
+                            checked={surgeryDistanceEnabled}
+                            onChange={() => this.setState((state) => ({
+                                ...state,
+                                surgeryDistanceEnabled: !surgeryDistanceEnabled
+                            }))}
+                        />}
+                    >
+                        <Slider
+                            disabled={!surgeryDistanceEnabled}
+                            min={0}
+                            max={10000}
+                            value={max_distance_to_surgery}
+                            labelStepSize={2500}
+                            stepSize={100}
+                            labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
+                            onChange={this.handleMaxDistanceToSurgeryChange}
                         />
                     </FormGroup>
                 </div>
@@ -169,15 +205,21 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
             ...state, filters: {...state.filters, max_distance_to_store: newValue}
         }));
     }
+    handleMaxDistanceToSurgeryChange = (newValue: number) => {
+        this.setState((state) => ({
+            ...state, filters: {...state.filters, max_distance_to_surgery: newValue}
+        }));
+    }
 
     handleSubmitNewFilter = () => {
         const {onFiltersUpdate} = this.props;
-        const {filters, convenienceStoreDistanceEnabled, storeDistanceEnabled} = this.state;
+        const {filters, convenienceStoreDistanceEnabled, storeDistanceEnabled, surgeryDistanceEnabled} = this.state;
 
         onFiltersUpdate({
             ...filters,
             max_distance_to_convenience: convenienceStoreDistanceEnabled ? filters.max_distance_to_convenience : undefined,
             max_distance_to_store: storeDistanceEnabled ? filters.max_distance_to_store : undefined,
+            max_distance_to_surgery: surgeryDistanceEnabled ? filters.max_distance_to_surgery : undefined,
         })
     }
 }
