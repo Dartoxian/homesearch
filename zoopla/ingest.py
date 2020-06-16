@@ -1,4 +1,5 @@
 import os
+from concurrent import futures
 
 from utils.ingestor import Ingestor
 from utils.logging import get_logger
@@ -92,5 +93,7 @@ def load_county(county: str):
 if __name__ == "__main__":
     counties = listdir(ZOOPLA_RAW_DATA_DIR)
     log.info(f"Found {len(counties)} counties to load")
-    for county in counties:
-        load_county(county)
+
+    executor = futures.ProcessPoolExecutor(10)
+    tasks = [executor.submit(load_county, county) for county in counties]
+    futures.wait(tasks)

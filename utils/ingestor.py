@@ -1,3 +1,4 @@
+from metadata.supermarkets import get_distance_to_nearest_convenience, get_distance_to_nearest_store
 from utils.logging import get_logger
 from utils.models import HouseProperty
 from utils.sql import get_cursor
@@ -15,28 +16,40 @@ class Ingestor:
         log.info(f"Ingested {self._ingested} files in total")
 
     def ingest(self, house: HouseProperty):
-        self._cur.execute("DELETE FROM houses WHERE external_id=%s", (house.external_id,))
+        params = {
+            "title": house.title,
+            "price": house.price,
+            "longitude": house.location.longitude,
+            "latitude": house.location.latitude,
+            "primary_image_url": house.primary_image_url,
+            "external_id": house.external_id,
+            "source": house.source,
+            "source_url": house.source_url,
+            "num_floors": house.num_floors,
+            "num_bedrooms": house.num_bedrooms,
+            "num_bathrooms": house.num_bathrooms,
+            "description": house.description,
+            "house_type": house.house_type,
+            "house_type_full": house.house_type_full,
+            "distance_to_nearest_convenience": get_distance_to_nearest_convenience(house.location, self._cur),
+            "distance_to_nearest_store": get_distance_to_nearest_store(house.location, self._cur),
+        }
+
         self._cur.execute(
             "INSERT INTO houses (title, price, location, primary_image_url,"
             " external_id, source, source_url, num_floors, num_bedrooms, num_bathrooms, description,"
-            " house_type, house_type_full)"
-            " VALUES (%s, %s, ST_SetSRID( ST_Point(%s, %s), 4326), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                house.title,
-                house.price,
-                house.location.longitude,
-                house.location.latitude,
-                house.primary_image_url,
-                house.external_id,
-                house.source,
-                house.source_url,
-                house.num_floors,
-                house.num_bedrooms,
-                house.num_bathrooms,
-                house.description,
-                house.house_type,
-                house.house_type_full,
-            ),
+            " house_type, house_type_full, distance_to_nearest_convenience, distance_to_nearest_store)"
+            " VALUES (%(title)s, %(price)s, ST_SetSRID( ST_Point(%(longitude)s, %(latitude)s), 4326),"
+            " %(primary_image_url)s, %(external_id)s, %(source)s, %(source_url)s, %(num_floors)s,"
+            " %(num_bedrooms)s, %(num_bathrooms)s, %(description)s, %(house_type)s, %(house_type_full)s,"
+            " %(distance_to_nearest_convenience)s, %(distance_to_nearest_store)s)"
+            " ON CONFLICT(external_id) DO UPDATE SET"
+            " external_id=%(external_id)s, source=%(source)s, source_url=%(source_url)s, num_floors=%(num_floors)s,"
+            " num_bedrooms=%(num_bedrooms)s, num_bathrooms=%(num_bathrooms)s, description=%(description)s,"
+            " house_type=%(house_type)s, house_type_full=%(house_type_full)s,"
+            " distance_to_nearest_convenience=%(distance_to_nearest_convenience)s,"
+            " distance_to_nearest_store=%(distance_to_nearest_store)s",
+            params,
         )
         self._ingested += 1
         if self._ingested % 1000 == 0:
