@@ -1,0 +1,5 @@
+\c homesearch
+
+SET ROLE homesearch;
+
+ALTER TABLE houses ADD last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;

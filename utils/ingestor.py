@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from metadata.nhs import get_distance_to_nearest_surgery
 from metadata.osm import get_distance_to_nearest_national_rail_station, get_distance_to_nearest_city_station
 from metadata.supermarkets import get_distance_to_nearest_convenience, get_distance_to_nearest_store
@@ -53,9 +55,9 @@ class Ingestor:
             " %(distance_to_nearest_convenience)s, %(distance_to_nearest_store)s, %(distance_to_nearest_surgery)s,"
             " %(distance_to_national_rail_station)s, %(distance_to_city_rail_station)s)"
             " ON CONFLICT(external_id) DO UPDATE SET"
-            " external_id=%(external_id)s, source=%(source)s, source_url=%(source_url)s, num_floors=%(num_floors)s,"
-            " num_bedrooms=%(num_bedrooms)s, num_bathrooms=%(num_bathrooms)s, description=%(description)s,"
-            " house_type=%(house_type)s, house_type_full=%(house_type_full)s,"
+            " last_update=CURRENT_TIMESTAMP, external_id=%(external_id)s, source=%(source)s, source_url=%(source_url)s,"
+            " num_floors=%(num_floors)s, num_bedrooms=%(num_bedrooms)s, num_bathrooms=%(num_bathrooms)s,"
+            " description=%(description)s, house_type=%(house_type)s, house_type_full=%(house_type_full)s,"
             " distance_to_nearest_convenience=%(distance_to_nearest_convenience)s,"
             " distance_to_nearest_store=%(distance_to_nearest_store)s,"
             " distance_to_nearest_surgery=%(distance_to_nearest_surgery)s,"
@@ -67,3 +69,9 @@ class Ingestor:
         if self._ingested % 1000 == 0:
             log.info(f"Ingested {self._ingested} files")
             self._cur.connection.commit()
+
+    @staticmethod
+    def clear_expired_records_for_source(source: str, oldest: datetime):
+        cur = get_cursor()
+        cur.execute("DELETE FROM houses WHERE source=%s AND last_update < %s", (source, oldest))
+        cur.connection.commit()
