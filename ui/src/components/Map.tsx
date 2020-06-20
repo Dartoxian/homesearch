@@ -1,6 +1,7 @@
 import React from 'react'
 import {Alert, Classes, Colors, Icon, Intent, Spinner, Toast, Toaster} from "@blueprintjs/core";
 import {
+    BASE_URL,
     getProperties, getStations,
     getSupermarkets,
     getSurgeries,
@@ -229,13 +230,13 @@ class HomesearchMapLeaflet {
             this.map.addSource('zone3-floods', {
                 'type': 'vector',
                 'tiles': [
-                    "http://localhost:5000/api/flood/zone3/{z}/{x}/{y}.mvt"
+                    `${BASE_URL}/api/flood/zone2/{z}/{x}/{y}.mvt`
                 ]
             });
             this.map.addSource('zone2-floods', {
                 'type': 'vector',
                 'tiles': [
-                    "http://localhost:5000/api/flood/zone2/{z}/{x}/{y}.mvt"
+                    `${BASE_URL}/api/flood/zone2/{z}/{x}/{y}.mvt`
                 ]
             });
             this.map.addLayer({

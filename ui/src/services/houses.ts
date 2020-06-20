@@ -1,7 +1,7 @@
 import {Point, Polygon} from "geojson";
 import {LngLatBounds} from "mapbox-gl";
 
-const BASE_URL = `http://${window.location.hostname}:5000`;
+export const BASE_URL = `http://${window.location.hostname}:5000`;
 
 export type HouseType = 'unknown' | 'flat' | 'detached' | 'bungalow' | 'semi_detached' | 'land' | 'terraced';
 export const houseTypes: HouseType[] = ['unknown' , 'flat' , 'detached' , 'bungalow' , 'semi_detached' , 'land' , 'terraced']
