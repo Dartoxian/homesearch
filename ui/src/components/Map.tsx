@@ -230,7 +230,7 @@ class HomesearchMapLeaflet {
             this.map.addSource('zone3-floods', {
                 'type': 'vector',
                 'tiles': [
-                    `${BASE_URL}/api/flood/zone2/{z}/{x}/{y}.mvt`
+                    `${BASE_URL}/api/flood/zone3/{z}/{x}/{y}.mvt`
                 ]
             });
             this.map.addSource('zone2-floods', {
