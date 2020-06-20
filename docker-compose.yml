@@ -13,6 +13,8 @@ services:
   gdal:
     image: osgeo/gdal:latest
     working_dir: /homesearch
+    environment:
+      - PG_PASSWORD=devpwd
     volumes:
       - "./data:/homesearch/data"
       - "./metadata:/homesearch/metadata:ro"
