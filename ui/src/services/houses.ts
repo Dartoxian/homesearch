@@ -1,4 +1,4 @@
-import {Point} from "geojson";
+import {Point, Polygon} from "geojson";
 import {LngLatBounds} from "mapbox-gl";
 
 const BASE_URL = `http://${window.location.hostname}:5000`;
@@ -51,6 +51,8 @@ export interface HousePropertyFilter {
     max_distance_to_convenience?: number;
     max_distance_to_store?: number;
     max_distance_to_surgery?: number;
+    max_distance_to_national_rail?: number;
+    max_distance_to_city_rail?: number;
 }
 
 export interface NhsSurgery {
@@ -58,6 +60,26 @@ export interface NhsSurgery {
     external_id: string;
     name: string;
     location: Point;
+}
+
+export interface RailStation {
+    station_id: number;
+    name: string;
+    network: string[];
+    location: Point;
+}
+
+const convertBoundsToGeoJson = (bounds: LngLatBounds): Polygon => {
+    return {
+        "type": "Polygon",
+        "coordinates": [[
+            [bounds.getWest(), bounds.getSouth()],
+            [bounds.getWest(), bounds.getNorth()],
+            [bounds.getEast(), bounds.getNorth()],
+            [bounds.getEast(), bounds.getSouth()],
+            [bounds.getWest(), bounds.getSouth()],
+        ]],
+    }
 }
 
 export function getProperties(bounds: LngLatBounds, after?: number, filters?: HousePropertyFilter): Promise<HousePropertyMeta[]> {
@@ -68,16 +90,7 @@ export function getProperties(bounds: LngLatBounds, after?: number, filters?: Ho
             'Accept': 'application/json',
         },
         body: JSON.stringify({
-            box: JSON.stringify({
-                "type": "Polygon",
-                "coordinates": [[
-                    [bounds.getWest(), bounds.getSouth()],
-                    [bounds.getWest(), bounds.getNorth()],
-                    [bounds.getEast(), bounds.getNorth()],
-                    [bounds.getEast(), bounds.getSouth()],
-                    [bounds.getWest(), bounds.getSouth()],
-                ]],
-            }),
+            box: JSON.stringify(convertBoundsToGeoJson(bounds)),
             after,
             filters
         })
@@ -115,16 +128,7 @@ export function getSupermarkets(bounds: LngLatBounds, after?: number): Promise<S
             'Accept': 'application/json',
         },
         body: JSON.stringify({
-            box: JSON.stringify({
-                "type": "Polygon",
-                "coordinates": [[
-                    [bounds.getWest(), bounds.getSouth()],
-                    [bounds.getWest(), bounds.getNorth()],
-                    [bounds.getEast(), bounds.getNorth()],
-                    [bounds.getEast(), bounds.getSouth()],
-                    [bounds.getWest(), bounds.getSouth()],
-                ]],
-            }),
+            box: JSON.stringify(convertBoundsToGeoJson(bounds)),
             after
         })
     })
@@ -157,16 +161,26 @@ export function getSurgeries(bounds: LngLatBounds, after?: number): Promise<NhsS
             'Accept': 'application/json',
         },
         body: JSON.stringify({
-            box: JSON.stringify({
-                "type": "Polygon",
-                "coordinates": [[
-                    [bounds.getWest(), bounds.getSouth()],
-                    [bounds.getWest(), bounds.getNorth()],
-                    [bounds.getEast(), bounds.getNorth()],
-                    [bounds.getEast(), bounds.getSouth()],
-                    [bounds.getWest(), bounds.getSouth()],
-                ]],
-            }),
+            box: JSON.stringify(convertBoundsToGeoJson(bounds)),
+            after
+        })
+    })
+        .then(r => r.json())
+        .then((r) => r.map(it => ({
+            ...it,
+            location: JSON.parse(it.location),
+        })));
+}
+
+export function getStations(bounds: LngLatBounds, after?: number): Promise<RailStation[]> {
+    return fetch(BASE_URL + '/api/stations', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            box: JSON.stringify(convertBoundsToGeoJson(bounds)),
             after
         })
     })

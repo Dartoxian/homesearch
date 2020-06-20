@@ -64,6 +64,12 @@ def get_houses():
         if "max_distance_to_surgery" in filters:
             query += " AND distance_to_nearest_surgery<=%s"
             params += (filters["max_distance_to_surgery"],)
+        if "max_distance_to_national_rail" in filters:
+            query += " AND distance_to_national_rail_station<=%s"
+            params += (filters["max_distance_to_national_rail"],)
+        if "max_distance_to_city_rail" in filters:
+            query += " AND distance_to_city_rail_station<=%s"
+            params += (filters["max_distance_to_city_rail"],)
     query += " ORDER BY house_id LIMIT 5000"
 
     cur = get_cursor()
@@ -137,6 +143,26 @@ def get_nhs_surgeries():
         query += " AND surgery_id>%s"
         params += (request_params["after"],)
     query += " ORDER BY surgery_id LIMIT 5000"
+    cur = get_cursor()
+    cur.execute(query, params)
+    return jsonify([dict(row) for row in cur.fetchall()])
+
+
+@app.route("/api/stations", methods=["POST"])
+def get_stations():
+    request_params = request.json
+    if not request_params or "box" not in request_params:
+        raise BadRequest("A bounding box must be specified to get stations")
+
+    query = (
+        "SELECT station_id, name, network, ST_AsGeoJSON(location) as location"
+        " FROM metadata.stations WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
+    )
+    params = (request_params["box"],)
+    if "after" in request_params:
+        query += " AND station_id>%s"
+        params += (request_params["after"],)
+    query += " ORDER BY station_id LIMIT 5000"
     cur = get_cursor()
     cur.execute(query, params)
     return jsonify([dict(row) for row in cur.fetchall()])

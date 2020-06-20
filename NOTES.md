@@ -9,6 +9,9 @@ sudo yum-config-manager \
 
 sudo yum install --nobest docker-ce docker-ce-cli containerd.io
 
+sudo systemctl start docker
+sudo systemctl enable docker
+
 sudo docker build -f homesearch.dockerfile -t homesearch-python .
 
 sudo curl -L "https://github.com/docker/compose/releases/download/1.26.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -21,14 +24,13 @@ cd data/postcodes
 sudo wget https://www.doogal.co.uk/files/postcodes.zip
 sudo unzip postcodes.zip
 cd ../../
-sudo docker-compose run -d -e PYTHONPATH=./ \
-    -e DB_HOST=homesearch_db_1 homesearch-python \
-    python metadata/postcodes/load_postcodes.py
+sudo docker-compose run -d homesearch-python python metadata/postcodes/load_postcodes.py
+sudo docker-compose run -d homesearch-python python metadata/supermarkets/load_supermarkets.py
+sudo docker-compose run -d homesearch-python python metadata/nhs/surgeries.py
 
 
 # Fetch all the zoopla data
-sudo docker-compose run -d -e PYTHONPATH=./ \
-    -e DB_HOST=homesearch_db_1 homesearch-python python zoopla/fetch.py 
+sudo docker-compose run -d homesearch-python python zoopla/fetch.py 
 
 
 # Fetch all rightmove data

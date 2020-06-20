@@ -61,6 +61,7 @@ def load_county(county: str):
     log.info(f"Loading data for {county}")
     root_path = os.path.join(ZOOPLA_RAW_DATA_DIR, county)
     files = [os.path.join(root_path, f) for f in listdir(root_path) if isfile(join(root_path, f))]
+    log.info(f"Ingesting {len(files)} files")
 
     ingestor = Ingestor()
     i = 0
@@ -94,6 +95,6 @@ if __name__ == "__main__":
     counties = listdir(ZOOPLA_RAW_DATA_DIR)
     log.info(f"Found {len(counties)} counties to load")
 
-    executor = futures.ProcessPoolExecutor(10)
+    executor = futures.ProcessPoolExecutor()
     tasks = [executor.submit(load_county, county) for county in counties]
     futures.wait(tasks)

@@ -1,11 +1,11 @@
 import React from 'react'
 import {Alert, Classes, Colors, Icon, Intent, Spinner, Toast, Toaster} from "@blueprintjs/core";
 import {
-    getProperties,
+    getProperties, getStations,
     getSupermarkets,
     getSurgeries,
     HousePropertyFilter,
-    HousePropertyMeta, NhsSurgery,
+    HousePropertyMeta, NhsSurgery, RailStation,
     Supermarket
 } from "../services/houses";
 import mapboxgl, {GeoJSONSource, LngLat, LngLatBounds, LngLatLike} from 'mapbox-gl';
@@ -128,6 +128,7 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         this.loadPropertyDataForBounds();
         this.loadSupermarketDataForBounds();
         this.loadSurgeriesForBounds();
+        this.loadStationsForBounds();
         this.setState((state) => ({...state, loading: true}));
     }
 
@@ -162,6 +163,16 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
             }
         });
     }
+
+    loadStationsForBounds = (from?: number) => {
+        const {bounds} = this.state;
+        getStations(bounds).then((stations) => {
+            this.homesearchMapLeaflet.addStations(stations);
+            if (stations.length == 5000) {
+                this.loadStationsForBounds(stations[stations.length - 1].station_id)
+            }
+        });
+    }
 }
 
 class HomesearchMapLeaflet {
@@ -169,6 +180,7 @@ class HomesearchMapLeaflet {
     private existingData: Feature[] = [];
     private existingSupermarkets: Feature[] = [];
     private existingSurgeries: Feature[] = [];
+    private existingStations: Feature[] = [];
 
     constructor(el: HTMLElement, initialPosition: LngLat, initialZoom: number, onViewportChanged: () => void, onHouseSelected: (house: HousePropertyMeta) => void) {
         this.map = new mapboxgl.Map({
@@ -203,6 +215,14 @@ class HomesearchMapLeaflet {
                 data: {
                     type: 'FeatureCollection',
                     features: this.existingSurgeries
+                },
+                generateId: true
+            });
+            this.map.addSource("station", {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: this.existingStations
                 },
                 generateId: true
             });
@@ -244,6 +264,22 @@ class HomesearchMapLeaflet {
                     "icon-allow-overlap": true,
                 },
                 minzoom: 13
+            });
+            this.map.addLayer({
+                id: "station",
+                type: "symbol",
+                source: "station",
+                'layout': {
+                    'icon-image': ["case",
+                        ['in', 'National Rail', ['get', 'network']], "national-rail",
+                        ['in', 'London Underground', ['get', 'network']], "underground",
+                        ['in', 'London Overground', ['get', 'network']], "overground",
+                        "station"
+                    ],
+                    'icon-size': 1,
+                    "icon-allow-overlap": true,
+                },
+                minzoom: 11
             });
             this.map.addLayer({
                 id: "points",
@@ -317,7 +353,7 @@ class HomesearchMapLeaflet {
         const self = this;
         ['aldi', 'asda', 'booths', 'budgens', 'costco', 'iceland', 'lidl', 'makro', 'mands',
             'morrisons', 'sainsburys', 'tesco', 'the-coop', 'waitrose', 'store',
-            'nhs',
+            'nhs', 'national-rail', 'underground', 'overground', 'station'
         ].forEach((retailer) => {
             this.map.loadImage(
                 `/${retailer}.png`,
@@ -364,7 +400,7 @@ class HomesearchMapLeaflet {
 
     public addSurgeries(surgeries: NhsSurgery[]) {
         const source = this.map.getSource("nhs-surgery") as GeoJSONSource;
-        const existingPoints = new Set(this.existingSupermarkets.map(it => it.properties.supermarket_id))
+        const existingPoints = new Set(this.existingSurgeries.map(it => it.properties.surgery_id))
         this.existingSurgeries = [
             ...this.existingSurgeries,
             ...surgeries.filter(surgery => !existingPoints.has(surgery.surgery_id)).map((surgery): Feature => ({
@@ -375,6 +411,23 @@ class HomesearchMapLeaflet {
         const data: FeatureCollection = {
             type: "FeatureCollection",
             features: this.existingSurgeries
+        }
+        source.setData(data);
+    }
+
+    public addStations(stations: RailStation[]) {
+        const source = this.map.getSource("station") as GeoJSONSource;
+        const existingPoints = new Set(this.existingStations.map(it => it.properties.station_id))
+        this.existingStations = [
+            ...this.existingStations,
+            ...stations.filter(surgery => !existingPoints.has(surgery.station_id)).map((station): Feature => ({
+                type: 'Feature', geometry: station.location, properties: station
+            }))
+        ]
+
+        const data: FeatureCollection = {
+            type: "FeatureCollection",
+            features: this.existingStations
         }
         source.setData(data);
     }

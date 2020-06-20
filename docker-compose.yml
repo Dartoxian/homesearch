@@ -9,6 +9,7 @@ services:
     volumes:
       # The database can be wiped with sudo -i sh -c 'rm -rf /var/lib/docker/volumes/docker_pgdata/_data/*'
       - "pgdata:/var/lib/postgresql/data"
+      - "./data:/homesearch/data"
   homesearch-python:
     build:
       dockerfile: homesearch.dockerfile
@@ -35,6 +36,7 @@ services:
       - "1234:1234"
     volumes:
       - ./ui/src:/ui/src
+      - ./ui/static:/ui/static
       - /ui/node_modules
       - /ui/dist
       - /ui/.cache

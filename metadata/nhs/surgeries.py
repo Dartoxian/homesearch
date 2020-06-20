@@ -12,7 +12,7 @@ SURGERIES_DATA = os.path.join(RAW_DATA_DIR, "nhs", "surgeries.csv")
 if not os.path.exists(SURGERIES_DATA):
     Path(os.path.join(RAW_DATA_DIR, "nhs")).mkdir(parents=True, exist_ok=True)
     os.system(f"wget http://media.nhschoices.nhs.uk/data/foi/GP.csv -O {SURGERIES_DATA}")
-log = get_logger("postcodes")
+log = get_logger("surgeries")
 
 with open(SURGERIES_DATA, encoding="latin1") as csvfile:
     cur = get_cursor()

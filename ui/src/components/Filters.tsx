@@ -12,6 +12,8 @@ export interface FiltersState {
     filters: HousePropertyFilter;
     convenienceStoreDistanceEnabled: boolean;
     storeDistanceEnabled: boolean;
+    nationalRailDistanceEnabled: boolean;
+    cityRailDistanceEnabled: boolean;
     surgeryDistanceEnabled: boolean;
 }
 
@@ -25,6 +27,8 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
             },
             convenienceStoreDistanceEnabled: props.initialFilter.max_distance_to_convenience !== undefined,
             storeDistanceEnabled: props.initialFilter.max_distance_to_store !== undefined,
+            nationalRailDistanceEnabled: props.initialFilter.max_distance_to_national_rail !== undefined,
+            cityRailDistanceEnabled: props.initialFilter.max_distance_to_city_rail !== undefined,
             surgeryDistanceEnabled: props.initialFilter.max_distance_to_surgery !== undefined,
         }
     }
@@ -32,9 +36,10 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
     render() {
         const {
             filters: {
-                price, property_types, num_bedrooms, max_distance_to_store, max_distance_to_convenience, max_distance_to_surgery
+                price, property_types, num_bedrooms, max_distance_to_store, max_distance_to_convenience,
+                max_distance_to_national_rail, max_distance_to_city_rail, max_distance_to_surgery
             },
-            convenienceStoreDistanceEnabled, storeDistanceEnabled, surgeryDistanceEnabled
+            convenienceStoreDistanceEnabled, storeDistanceEnabled, nationalRailDistanceEnabled, cityRailDistanceEnabled, surgeryDistanceEnabled
         } = this.state;
 
         return (
@@ -46,12 +51,12 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                     >
                         <RangeSlider
                             min={0}
-                            max={500000}
+                            max={1000000}
                             value={price}
                             labelStepSize={250000}
                             stepSize={10000}
-                            labelRenderer={price => `${(price / 1000).toFixed(0)}k`}
-                            onChange={this.handlePriceRangeChanged}
+                            labelRenderer={price => (price < 1000000) ? `${(price / 1000).toFixed(0)}k` : `${(price / 1000000).toFixed(1)}M`}
+                            onChange={this.handleFilterValueChange("price")}
                         />
                     </FormGroup>
                     <FormGroup
@@ -63,10 +68,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             value={num_bedrooms}
                             labelStepSize={1}
                             stepSize={1}
-                            onChange={(range) => this.setState((state) => ({
-                                ...state,
-                                filters: {...state.filters, num_bedrooms: range}
-                            }))}
+                            onChange={this.handleFilterValueChange("num_bedrooms")}
                         />
                     </FormGroup>
                 </div>
@@ -84,12 +86,12 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                         <Slider
                             disabled={!convenienceStoreDistanceEnabled}
                             min={0}
-                            max={5000}
+                            max={2000}
                             value={max_distance_to_convenience}
                             labelStepSize={2500}
                             stepSize={100}
                             labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
-                            onChange={this.handleMaxDistanceToConvenienceChange}
+                            onChange={this.handleFilterValueChange("max_distance_to_convenience")}
                         />
                     </FormGroup>
                     <FormGroup
@@ -110,7 +112,51 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             labelStepSize={5000}
                             stepSize={100}
                             labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
-                            onChange={this.handleMaxDistanceToStoreChange}
+                            onChange={this.handleFilterValueChange("max_distance_to_store")}
+                        />
+                    </FormGroup>
+                </div>
+                <div className={"row"}>
+                    <FormGroup
+                        label={<Checkbox
+                            label={"Distance to National Rail station"}
+                            checked={nationalRailDistanceEnabled}
+                            onChange={() => this.setState((state) => ({
+                                ...state,
+                                nationalRailDistanceEnabled: !nationalRailDistanceEnabled
+                            }))}
+                        />}
+                    >
+                        <Slider
+                            disabled={!nationalRailDistanceEnabled}
+                            min={0}
+                            max={5000}
+                            value={max_distance_to_national_rail}
+                            labelStepSize={2500}
+                            stepSize={100}
+                            labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
+                            onChange={this.handleFilterValueChange("max_distance_to_national_rail")}
+                        />
+                    </FormGroup>
+                    <FormGroup
+                        label={<Checkbox
+                            label={"Distance to Metropolitan Rail station"}
+                            checked={cityRailDistanceEnabled}
+                            onChange={() => this.setState((state) => ({
+                                ...state,
+                                cityRailDistanceEnabled: !cityRailDistanceEnabled
+                            }))}
+                        />}
+                    >
+                        <Slider
+                            disabled={!cityRailDistanceEnabled}
+                            min={0}
+                            max={10000}
+                            value={max_distance_to_city_rail}
+                            labelStepSize={5000}
+                            stepSize={100}
+                            labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
+                            onChange={this.handleFilterValueChange("max_distance_to_national_rail")}
                         />
                     </FormGroup>
                 </div>
@@ -133,7 +179,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             labelStepSize={2500}
                             stepSize={100}
                             labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
-                            onChange={this.handleMaxDistanceToSurgeryChange}
+                            onChange={this.handleFilterValueChange("max_distance_to_surgery")}
                         />
                     </FormGroup>
                 </div>
@@ -189,25 +235,9 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
         }
     }
 
-    handlePriceRangeChanged = (range: NumberRange) => {
+    handleFilterValueChange = <K extends keyof HousePropertyFilter, V extends HousePropertyFilter[K]>(key: K) => (newValue: V) => {
         this.setState((state) => ({
-            ...state, filters: {...state.filters, price: range}
-        }));
-    }
-
-    handleMaxDistanceToConvenienceChange = (newValue: number) => {
-        this.setState((state) => ({
-            ...state, filters: {...state.filters, max_distance_to_convenience: newValue}
-        }));
-    }
-    handleMaxDistanceToStoreChange = (newValue: number) => {
-        this.setState((state) => ({
-            ...state, filters: {...state.filters, max_distance_to_store: newValue}
-        }));
-    }
-    handleMaxDistanceToSurgeryChange = (newValue: number) => {
-        this.setState((state) => ({
-            ...state, filters: {...state.filters, max_distance_to_surgery: newValue}
+            ...state, filters: {...state.filters, [key]: newValue}
         }));
     }
 
