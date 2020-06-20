@@ -1,13 +1,17 @@
 import json
+from http import HTTPStatus
 
 from flask import Flask, jsonify, request, make_response, Request, Response
 from flask_cors import CORS
 from werkzeug.exceptions import BadRequest
 
+from server.vectorTileUtils import get_pbf_for
+from utils.logging import get_logger
 from utils.sql import get_cursor
 
 app = Flask(__name__)
 CORS(app)
+log = get_logger("main")
 
 
 @app.route("/api/postcodes", methods=["POST"])
@@ -166,6 +170,26 @@ def get_stations():
     cur = get_cursor()
     cur.execute(query, params)
     return jsonify([dict(row) for row in cur.fetchall()])
+
+
+@app.route("/api/flood/zone3/<z>/<x>/<y>.<fmt>", methods=["GET"])
+def get_zone3_flood_vector(z, x, y, fmt):
+    pbf = get_pbf_for(
+        float(x), float(y), float(z), "defra.flood_map_for_planning_rivers_and_sea_flood_zone_3", "wkb_geometry"
+    )
+    response = make_response(bytes(pbf), HTTPStatus.OK)
+    response.headers["Content-type"] = "application/vnd.mapbox-vector-tile"
+    return response
+
+
+@app.route("/api/flood/zone2/<z>/<x>/<y>.<fmt>", methods=["GET"])
+def get_zone2_flood_vector(z, x, y, fmt):
+    pbf = get_pbf_for(
+        float(x), float(y), float(z), "defra.flood_map_for_planning_rivers_and_sea_flood_zone_2", "wkb_geometry"
+    )
+    response = make_response(bytes(pbf), HTTPStatus.OK)
+    response.headers["Content-type"] = "application/vnd.mapbox-vector-tile"
+    return response
 
 
 if __name__ == "__main__":

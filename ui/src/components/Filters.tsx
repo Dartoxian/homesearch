@@ -140,7 +140,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                     </FormGroup>
                     <FormGroup
                         label={<Checkbox
-                            label={"Distance to Metropolitan Rail station"}
+                            label={"Distance to Metropolitan Rail   "}
                             checked={cityRailDistanceEnabled}
                             onChange={() => this.setState((state) => ({
                                 ...state,

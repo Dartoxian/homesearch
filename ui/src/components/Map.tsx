@@ -159,7 +159,7 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         getSurgeries(bounds).then((surgeries) => {
             this.homesearchMapLeaflet.addSurgeries(surgeries);
             if (surgeries.length == 5000) {
-                this.loadSupermarketDataForBounds(surgeries[surgeries.length - 1].surgery_id)
+                this.loadSurgeriesForBounds(surgeries[surgeries.length - 1].surgery_id)
             }
         });
     }
@@ -225,6 +225,18 @@ class HomesearchMapLeaflet {
                     features: this.existingStations
                 },
                 generateId: true
+            });
+            this.map.addSource('zone3-floods', {
+                'type': 'vector',
+                'tiles': [
+                    "http://localhost:5000/api/flood/zone3/{z}/{x}/{y}.mvt"
+                ]
+            });
+            this.map.addSource('zone2-floods', {
+                'type': 'vector',
+                'tiles': [
+                    "http://localhost:5000/api/flood/zone2/{z}/{x}/{y}.mvt"
+                ]
             });
             this.map.addLayer({
                 id: "supermarkets",
@@ -304,6 +316,30 @@ class HomesearchMapLeaflet {
                     'circle-opacity': 0.7,
                 }
             });
+            this.map.addLayer({
+                'id': 'zone2-floods',
+                'type': 'fill',
+                'source': 'zone2-floods',
+                'source-layer': 'default',
+                'minzoom': 0,
+                'maxzoom': 22,
+                'paint': {
+                    'fill-opacity': 0.1,
+                    'fill-color': Colors.BLUE1,
+                }
+            })
+            this.map.addLayer({
+                'id': 'zone3-floods',
+                'type': 'fill',
+                'source': 'zone3-floods',
+                'source-layer': 'default',
+                'minzoom': 0,
+                'maxzoom': 22,
+                'paint': {
+                    'fill-opacity': 0.2,
+                    'fill-color': Colors.BLUE1,
+                }
+            })
 
             this.map.setPaintProperty("points", "circle-color", [
                 "case",

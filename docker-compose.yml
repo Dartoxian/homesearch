@@ -10,6 +10,12 @@ services:
       # The database can be wiped with sudo -i sh -c 'rm -rf /var/lib/docker/volumes/docker_pgdata/_data/*'
       - "pgdata:/var/lib/postgresql/data"
       - "./data:/homesearch/data"
+  gdal:
+    image: osgeo/gdal:latest
+    working_dir: /homesearch
+    volumes:
+      - "./data:/homesearch/data"
+      - "./metadata:/homesearch/metadata:ro"
   homesearch-python:
     build:
       dockerfile: homesearch.dockerfile
