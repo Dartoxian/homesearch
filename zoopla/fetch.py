@@ -10,6 +10,7 @@ import json
 from ratelimit import sleep_and_retry, limits, RateLimitException
 
 from metadata.postcodes import get_postcode_districts
+from utils.fetch import set_successful_fetch_state, get_last_successful_fetch
 from utils.ingestor import Ingestor
 from utils.logging import get_logger
 from global_config import ZOOPLA_RAW_DATA_DIR
@@ -70,9 +71,13 @@ def fetch_and_save_data(postcode_district: str, page: int) -> int:
 if __name__ == "__main__":
     postcode_districts = get_postcode_districts()
 
+    last_run_state = get_last_successful_fetch("zoopla")
+    if last_run_state:
+        log.info(f"A previous fetch run has been detected, resuming from after {last_run_state}")
+
     while True:
         log.info(f"Fetching data for {len(postcode_districts)} postcode areas")
-        for postcode_district in postcode_districts:
+        for postcode_district in [p for p in postcode_districts if last_run_state is None or p > last_run_state]:
             log.info(f"Fetching properties for area {postcode_district}")
             if os.path.exists(os.path.join(ZOOPLA_RAW_DATA_DIR, postcode_district)):
                 log.info(f"It looks like we've already fetched {postcode_district}, removing.")
@@ -92,5 +97,7 @@ if __name__ == "__main__":
                 page += 1
             if result_count > 0:
                 load_county(postcode_district)
+            set_successful_fetch_state("zoopla", postcode_district)
         log.info("Finished fetching zoopla data, clearing expired data")
         Ingestor.clear_expired_records_for_source("Zoopla", datetime.now() - timedelta(days=2))
+        last_run_state = None
