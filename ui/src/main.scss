@@ -1,3 +1,5 @@
+@import "~@blueprintjs/core/lib/scss/variables";
+
 body {
   div:focus, button:focus {
     outline: none;
@@ -85,6 +87,16 @@ body {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+  }
+
+  .top-section {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 20px;
+  }
+
+  .bp3-tab-list {
+    border-bottom: 1px solid $light-gray3;
   }
 
   .content-wrapper {

@@ -139,7 +139,6 @@ export class HomesearchMapWithContext extends React.Component<{appContext: AppSt
                     {selectedHouse && (
                         <HouseDetails
                             houseMeta={selectedHouse}
-                            onClose={() => this.setState((state) => ({...state, selectedHouse: undefined}))}
                             onHouseMetaUpdate={(house) => this.homesearchMapLeaflet.updatePoint(house)}
                         />
                     )}

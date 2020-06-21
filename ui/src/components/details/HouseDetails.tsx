@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Card, H3, Spinner, H5, Button, Tabs, Tab, Icon} from "@blueprintjs/core";
+import {Card, H3, Spinner, H5, Button, Tabs, Tab, Icon, UL} from "@blueprintjs/core";
 import {
     getHouse,
     getNearestSupermarkets,
@@ -15,7 +15,6 @@ import {AppState, withAppContext} from "../../models";
 
 export interface HouseDetailsProps {
     appContext: AppState
-    onClose: () => void;
     onHouseMetaUpdate: (house: HousePropertyMeta) => void;
 }
 
@@ -80,13 +79,20 @@ export class HouseDetailsWithContext extends React.Component<HouseDetailsProps, 
                             <Button
                                 minimal={true}
                                 icon={IconNames.CROSS}
-                                onClick={this.props.onClose}
+                                onClick={() => this.props.appContext.onHouseSelected(undefined)}
                             />
                         </div>
                     </div>
                     <H5>GBP {house.price.toLocaleString()}</H5>
                     <Card className={"content-wrapper"}>
-                        <img src={house.primary_image_url} />
+                        <div className={'top-section'}>
+                            <img src={house.primary_image_url} width={250} />
+                            <UL>
+                                <li><b>{house.num_bedrooms}</b> Bedrooms</li>
+                                <li><b>{house.house_type_full}</b></li>
+                                {house.num_floors !== undefined && house.num_floors > 0 && <li><b>{house.num_floors}</b> Floors</li>}
+                            </UL>
+                        </div>
                         <Tabs>
                             <Tab id="description" title="Description" panel={<Description text={!house?undefined:house.description}/>} />
                             <Tab id="supermarkets" title="Supermarkets" panel={<Supermarkets supermarkets={supermarkets} />} />

@@ -31,7 +31,7 @@ def get_favourites():
     cur = get_cursor()
     cur.execute(
         "SELECT  houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source"
+        " num_bedrooms, num_bathrooms, source, house_type, house_type_full"
         " FROM user_sentiment JOIN houses USING (house_id)"
         " WHERE user_email=%s AND type='favourite'",
         (user_email,),

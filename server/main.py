@@ -51,7 +51,7 @@ def get_houses():
 
     query = (
         "SELECT houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source"
+        " num_bedrooms, num_bathrooms, source, house_type, house_type_full"
     )
     params = ()
     if user_email is not None:
@@ -113,7 +113,7 @@ def get_house():
 
     query = (
         "SELECT houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source, source_url, description"
+        " num_bedrooms, num_bathrooms, source, source_url, description, house_type, house_type_full"
     )
 
     try:
