@@ -1,10 +1,11 @@
 import * as React from 'react';
 import {AppState, withAppContext} from "../models";
-import {Button, Callout, Card, H5} from "@blueprintjs/core";
+import {Button, Callout, Card,} from "@blueprintjs/core";
 import {SignIn} from "./SignIn";
 import {isUserLoggedIn} from "../services/firebase";
 import {HousePropertyMeta} from "../services/houses";
 import {IconNames} from "@blueprintjs/icons";
+import {KeyPoints} from "./details/KeyPoints";
 
 export interface StarredPropertiesProps {
     appContext: AppState;
@@ -14,7 +15,7 @@ const HousePreview: React.FC<{house: HousePropertyMeta, getFocus: () =>  void}> 
     return (
         <Card className={"house-preview"}>
             <div className={"header"}>
-                <H5>{house.title}</H5>
+                <h4>{house.title}</h4>
                 <div className={"controls"}>
                     <Button
                         minimal={true}
@@ -23,7 +24,10 @@ const HousePreview: React.FC<{house: HousePropertyMeta, getFocus: () =>  void}> 
                     />
                 </div>
             </div>
-            <img src={house.primary_image_url} width={100}/>
+            <div className={"summary"}>
+                <img src={house.primary_image_url} width={100}/>
+                <KeyPoints house={house} />
+            </div>
         </Card>
     )
 }

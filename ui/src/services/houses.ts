@@ -17,7 +17,8 @@ export interface HousePropertyMeta {
     num_floors?: number
     num_bedrooms?: number
     num_bathrooms?: number
-    house_type?: HouseType
+    house_type?: HouseType,
+    house_type_full: string
 }
 
 
@@ -25,7 +26,6 @@ export interface HouseProperty extends HousePropertyMeta {
     source: string
     source_url: string
     description: string
-    house_type_full: string
 }
 
 export type SupermarketType = 'hypermarket'| 'supermarket'| 'store'| 'convenience'| 'unknown';

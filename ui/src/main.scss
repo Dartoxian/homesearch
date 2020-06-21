@@ -56,8 +56,22 @@ body {
 
 .favourites {
   .house-preview {
-    padding: 10px;
+    padding: 5px;
     margin: 10px 0;
+    .header {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      h4 {
+        margin-block-start: 3px;
+        margin-block-end: 3px;
+      }
+    }
+    .summary {
+      display: flex;
+      flex-direction: row;
+    }
   }
 }
 

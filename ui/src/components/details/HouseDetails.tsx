@@ -12,6 +12,7 @@ import {Supermarkets} from "./Supermarkets";
 import {Description} from "./Description";
 import {getFavourites, removeSentiment, setSentiment} from "../../services/users";
 import {AppState, withAppContext} from "../../models";
+import {KeyPoints} from "./KeyPoints";
 
 export interface HouseDetailsProps {
     appContext: AppState
@@ -87,11 +88,7 @@ export class HouseDetailsWithContext extends React.Component<HouseDetailsProps, 
                     <Card className={"content-wrapper"}>
                         <div className={'top-section'}>
                             <img src={house.primary_image_url} width={250} />
-                            <UL>
-                                <li><b>{house.num_bedrooms}</b> Bedrooms</li>
-                                <li><b>{house.house_type_full}</b></li>
-                                {house.num_floors !== undefined && house.num_floors > 0 && <li><b>{house.num_floors}</b> Floors</li>}
-                            </UL>
+                            <KeyPoints house={this.props.appContext.selectedHouse} />
                         </div>
                         <Tabs>
                             <Tab id="description" title="Description" panel={<Description text={!house?undefined:house.description}/>} />
