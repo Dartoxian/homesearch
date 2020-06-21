@@ -1,7 +1,6 @@
 import React from 'react'
 import {Alert, Classes, Colors, Icon, Intent, Spinner, Toast, Toaster} from "@blueprintjs/core";
 import {
-    BASE_URL,
     getProperties, getStations,
     getSupermarkets,
     getSurgeries,
@@ -10,10 +9,16 @@ import {
     Supermarket
 } from "../services/houses";
 import mapboxgl, {GeoJSONSource, LngLat, LngLatBounds, LngLatLike} from 'mapbox-gl';
-import {Feature, FeatureCollection, Point} from "geojson";
-import {HouseDetails} from "./HouseDetails";
+import {Feature, FeatureCollection} from "geojson";
+import {HouseDetails} from "./details/HouseDetails";
 import {Filters} from "./Filters";
 import Cookies from "js-cookie";
+import {BASE_URL} from "../services/config";
+import {Tabs} from "./Tabs";
+import {About} from "./About";
+import {Account} from "./Account";
+import {StarredProperties} from "./StarredProperties";
+import {AppState, withAppContext} from "../models";
 
 
 export interface HomesearchMapState {
@@ -24,10 +29,9 @@ export interface HomesearchMapState {
     loading?: boolean,
 
     filters: HousePropertyFilter,
-    selectedHouse?: HousePropertyMeta;
 }
 
-export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
+export class HomesearchMapWithContext extends React.Component<{appContext: AppState}, HomesearchMapState> {
 
     private mapRef = React.createRef<HTMLDivElement>();
     private homesearchMapLeaflet: HomesearchMapLeaflet;
@@ -35,10 +39,11 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
     constructor(props) {
         super(props);
         this.state = {
+            loading: true,
             center: Cookies.get("center") ? JSON.parse(Cookies.get("center")) : [-2.15, 51.2],
             zoom: parseFloat(Cookies.get("zoom")) || 9,
             filters: {
-                price:  [100000, 300000],
+                price: [100000, 300000],
                 num_bedrooms: [1, 3],
                 ...(Cookies.get("filters") ? JSON.parse(Cookies.get("filters")) : {})
             }
@@ -46,7 +51,7 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
     }
 
     componentDidMount() {
-        this.homesearchMapLeaflet = new HomesearchMapLeaflet(this.mapRef.current, this.state.center, this.state.zoom, this.handleViewportChanged, this.handleHouseSelected);
+        this.homesearchMapLeaflet = new HomesearchMapLeaflet(this.mapRef.current, this.state.center, this.state.zoom, this.handleViewportChanged, this.props.appContext.onHouseSelected);
         new Promise(resolve => {
             const checkLoaded = () => {
                 if (this.homesearchMapLeaflet.map.loaded()) {
@@ -62,7 +67,8 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         });
     }
 
-    componentDidUpdate(prevProps: Readonly<{}>, prevState: Readonly<HomesearchMapState>, snapshot?: any) {
+    componentDidUpdate(prevProps: Readonly<{appContext: AppState}>, prevState: Readonly<HomesearchMapState>, snapshot?: any) {
+        const {appContext: {user, focusPoint}} = this.props;
         const {bounds, zoom, filters} = this.state;
         if (bounds !== prevState.bounds || zoom != prevState.zoom) {
             Cookies.set("center", JSON.stringify(bounds.getCenter()))
@@ -76,10 +82,17 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
             this.loadDataForBounds();
             return
         }
+        if (user !== prevProps.appContext.user) {
+            this.loadDataForBounds();
+        }
+        if (focusPoint !== undefined && focusPoint !== prevProps.appContext.focusPoint) {
+            this.homesearchMapLeaflet.focusOnPoint(focusPoint.coordinates as [number, number]);
+        }
     }
 
     render() {
-        const {errors, loading, filters, selectedHouse} = this.state;
+        const {appContext: {onHouseSelected, selectedHouse}} = this.props;
+        const {errors, loading, filters} = this.state;
 
         if (errors) return <Alert>Error :( {errors}</Alert>;
 
@@ -88,19 +101,48 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
                 <Toaster>
                     {loading && <Toast
                         intent={Intent.NONE} message={"Loading results"}
-                        icon={<div className={Classes.ICON}><Spinner intent={Intent.PRIMARY} size={Icon.SIZE_STANDARD}/></div>}
+                        icon={<div className={Classes.ICON}><Spinner intent={Intent.PRIMARY} size={Icon.SIZE_STANDARD}/>
+                        </div>}
                     />}
                 </Toaster>
                 <div ref={this.mapRef}/>
                 <div className={"overlay-wrappers"}>
-                <Filters initialFilter={filters} onFiltersUpdate={(filters) => this.setState((state) => ({...state, filters}))}/>
-                {selectedHouse && (
-                    <HouseDetails
-                        houseMeta={selectedHouse}
-                        onClose={() => this.setState((state) => ({...state, selectedHouse: undefined}))}
-                        onFocus={this.handleSelectedFocus}
-                    />
-                )}
+                    <Tabs tabs={[
+                        {
+                            name: "Filters",
+                            panel: (
+                                <Filters
+                                    initialFilter={filters}
+                                    onFiltersUpdate={(filters) => this.setState((state) => ({...state, filters}))}
+                                />
+                            )
+                        },
+                        {
+                            name: "Starred Properties",
+                            panel: (
+                                <StarredProperties />
+                            )
+                        },
+                        {
+                            name: "Account",
+                            panel: (
+                                <Account />
+                            )
+                        },
+                        {
+                            name: "About",
+                            panel: (
+                                <About />
+                            )
+                        }
+                    ]}/>
+                    {selectedHouse && (
+                        <HouseDetails
+                            houseMeta={selectedHouse}
+                            onClose={() => this.setState((state) => ({...state, selectedHouse: undefined}))}
+                            onHouseMetaUpdate={(house) => this.homesearchMapLeaflet.updatePoint(house)}
+                        />
+                    )}
                 </div>
             </div>
         );
@@ -114,18 +156,10 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         }
     }
 
-    handleHouseSelected = (selectedHouse: HousePropertyMeta) => {
-        this.setState((state) => ({...state, selectedHouse: {...selectedHouse, location: JSON.parse(selectedHouse.location as unknown as string)}}));
-    }
-
-    handleSelectedFocus = () => {
-        const {selectedHouse} = this.state;
-        if (selectedHouse) {
-            this.homesearchMapLeaflet.focusOnPoint(selectedHouse.location.coordinates as [number,number]);
-        }
-    }
-
     loadDataForBounds = () => {
+        if (this.state.bounds === undefined) {
+            return;
+        }
         this.loadPropertyDataForBounds();
         this.loadSupermarketDataForBounds();
         this.loadSurgeriesForBounds();
@@ -175,6 +209,8 @@ export class HomesearchMap extends React.Component<{}, HomesearchMapState> {
         });
     }
 }
+
+export const HomesearchMap = withAppContext(HomesearchMapWithContext)
 
 class HomesearchMapLeaflet {
     public map: mapboxgl.Map;
@@ -303,14 +339,11 @@ class HomesearchMapLeaflet {
                         ["boolean", ["feature-state", "hover"], false], 8,
                         4
                     ],
-                    'circle-color': ["case",
-                        ["<=", ["get", "price"], 100000], Colors.GREEN1,
-                        ["<=", ["get", "price"], 200000], Colors.BLUE1,
-                        ["<=", ["get", "price"], 300000], Colors.BLUE2,
-                        ["<=", ["get", "price"], 400000], Colors.BLUE3,
-                        ["<=", ["get", "price"], 500000], Colors.RED1,
-                        ["<=", ["get", "price"], 600000], Colors.RED3,
-                        Colors.RED5
+                    "circle-color": [
+                        "case",
+                        ["==", ["get", "sentiment_type"], "favourite"], Colors.GOLD3,
+                        ["==", ["get", "sentiment_type"], "ignore"], Colors.GRAY3,
+                        Colors.VIOLET1
                     ],
                     'circle-stroke-color': 'white',
                     'circle-stroke-width': 1,
@@ -342,15 +375,15 @@ class HomesearchMapLeaflet {
                 }
             })
 
-            this.map.setPaintProperty("points", "circle-color", [
-                "case",
-                ["==", ["get", "source"], "Zoopla"], Colors.VIOLET1,
-                ["==", ["get", "source"], "RightMove"], Colors.GREEN1,
-                Colors.RED5
-            ])
-
             this.map.on("click", "points", function (e) {
-                const house = e.features[0].properties as HousePropertyMeta;
+                const house = Object.entries(e.features[0].properties).reduce((acc, [key, value]) => {
+                    try {
+                        acc[key] = JSON.parse(value);
+                    } catch (e) {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {}) as HousePropertyMeta;
                 onHouseSelected(house);
             });
 
@@ -394,7 +427,7 @@ class HomesearchMapLeaflet {
         ].forEach((retailer) => {
             this.map.loadImage(
                 `/${retailer}.png`,
-                function(error, image) {
+                function (error, image) {
                     if (error) throw error;
                     self.map.addImage(retailer, image);
                 });
@@ -410,6 +443,19 @@ class HomesearchMapLeaflet {
                 type: 'Feature', geometry: house.location, properties: house
             }))
         ]
+
+        const data: FeatureCollection = {
+            type: "FeatureCollection",
+            features: this.existingData
+        }
+        source.setData(data);
+    }
+
+    public updatePoint(house: HousePropertyMeta) {
+        const source = this.map.getSource("points") as GeoJSONSource;
+        this.existingData = this.existingData.map(it => it.properties.house_id !== house.house_id ? it : ({
+            type: 'Feature', geometry: house.location, properties: house
+        }));
 
         const data: FeatureCollection = {
             type: "FeatureCollection",

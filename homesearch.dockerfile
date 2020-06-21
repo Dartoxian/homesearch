@@ -1,17 +1,13 @@
-FROM python:3.7.7-alpine3.11
+FROM python:3.7.7-buster
 
 WORKDIR /homesearch
 
 COPY requirements.txt .
 
-RUN apk update
-RUN \
- apk add --no-cache postgresql-libs curl && \
- apk add --no-cache --virtual .build-deps gcc musl-dev postgresql-dev && \
- python3 -m pip install -r requirements.txt --no-cache-dir && \
- apk --purge del .build-deps
-
-RUN pip install -r requirements.txt
+RUN apt update
+RUN python3 -m pip install --upgrade pip
+RUN apt-get install -y curl gcc libpq-dev python-dev
+RUN python3 -m pip install -r requirements.txt --no-cache-dir
 
 COPY . .
 

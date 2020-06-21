@@ -1,16 +1,18 @@
 import json
-from http import HTTPStatus
 
-from flask import Flask, jsonify, request, make_response, Request, Response
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, HTTPException
 
-from server.vectorTileUtils import get_pbf_for
+from server.flood import flood_commands
+from server.users import user_commands, verify_token
 from utils.logging import get_logger
 from utils.sql import get_cursor
 
 app = Flask(__name__)
 CORS(app)
+app.register_blueprint(flood_commands)
+app.register_blueprint(user_commands)
 log = get_logger("main")
 
 
@@ -40,11 +42,33 @@ def get_houses():
     if not request_params or "box" not in request_params:
         raise BadRequest("A bounding box must be specified to get houses")
 
+    user_email = None
+    try:
+        user_email = verify_token()
+    except HTTPException:
+        # do nothing, the user isn't authenticated
+        pass
+
     query = (
-        "SELECT house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source FROM houses WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
+        "SELECT houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
+        " num_bedrooms, num_bathrooms, source"
     )
-    params = (request_params["box"],)
+    params = ()
+    if user_email is not None:
+        query += (
+            ", user_sentiment.type as sentiment_type"
+            " FROM HOUSES LEFT JOIN user_sentiment"
+            " ON houses.house_id = user_sentiment.house_id AND user_sentiment.user_email=%s"
+            " WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
+        )
+        params = (
+            user_email,
+            request_params["box"],
+        )
+    else:
+        query += " FROM houses WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
+        params = (request_params["box"],)
+
     if "after" in request_params:
         query += " AND house_id>%s"
         params += (request_params["after"],)
@@ -87,12 +111,26 @@ def get_house():
     if not request_params or "house_id" not in request_params:
         raise BadRequest("A house id must be specified to load a particular house")
 
-    cur = get_cursor()
-    cur.execute(
-        "SELECT house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source, source_url, description FROM houses WHERE house_id=%s",
-        (request_params["house_id"],),
+    query = (
+        "SELECT houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
+        " num_bedrooms, num_bathrooms, source, source_url, description"
     )
+
+    try:
+        user_email = verify_token()
+        query += (
+            ", user_sentiment.type as sentiment_type"
+            " FROM houses LEFT JOIN user_sentiment"
+            " ON houses.house_id = user_sentiment.house_id AND user_sentiment.user_email=%s"
+            " WHERE houses.house_id=%s"
+        )
+        params = (user_email, request_params["house_id"])
+    except HTTPException:
+        query += " FROM houses WHERE houses.house_id=%s"
+        params = (request_params["house_id"],)
+
+    cur = get_cursor()
+    cur.execute(query, params)
     return jsonify(dict(cur.fetchone()))
 
 
@@ -170,26 +208,6 @@ def get_stations():
     cur = get_cursor()
     cur.execute(query, params)
     return jsonify([dict(row) for row in cur.fetchall()])
-
-
-@app.route("/api/flood/zone3/<z>/<x>/<y>.<fmt>", methods=["GET"])
-def get_zone3_flood_vector(z, x, y, fmt):
-    pbf = get_pbf_for(
-        float(x), float(y), float(z), "defra.flood_map_for_planning_rivers_and_sea_flood_zone_3", "wkb_geometry"
-    )
-    response = make_response(bytes(pbf), HTTPStatus.OK)
-    response.headers["Content-type"] = "application/vnd.mapbox-vector-tile"
-    return response
-
-
-@app.route("/api/flood/zone2/<z>/<x>/<y>.<fmt>", methods=["GET"])
-def get_zone2_flood_vector(z, x, y, fmt):
-    pbf = get_pbf_for(
-        float(x), float(y), float(z), "defra.flood_map_for_planning_rivers_and_sea_flood_zone_2", "wkb_geometry"
-    )
-    response = make_response(bytes(pbf), HTTPStatus.OK)
-    response.headers["Content-type"] = "application/vnd.mapbox-vector-tile"
-    return response
 
 
 if __name__ == "__main__":

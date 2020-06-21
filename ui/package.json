@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "parcel src/index.html"
+    "start": "parcel --hmr-port 1235 src/index.html"
   },
   "repository": {
     "type": "git",
@@ -20,12 +20,15 @@
   "dependencies": {
     "@blueprintjs/core": "^3.28.2",
     "classnames": "^2.2.6",
+    "firebase": "^7.15.3",
     "js-cookie": "^2.2.1",
     "leaflet": "^1.6.0",
     "mapbox-gl": "^1.11.0",
     "mapbox-gl-leaflet": "0.0.12",
     "react": "^16.13.1",
-    "react-dom": "^16.13.1"
+    "react-dom": "^16.13.1",
+    "react-firebaseui": "^4.1.0",
+    "react-ga": "^3.0.0"
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.7",

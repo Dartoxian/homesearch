@@ -43,7 +43,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
         } = this.state;
 
         return (
-            <Card className={"filters"}>
+            <div className={"filters"}>
                 Here are some filters
                 <div className={"row"}>
                     <FormGroup
@@ -204,7 +204,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                         onClick={this.handleSubmitNewFilter}
                     />
                 </div>
-            </Card>
+            </div>
         );
     }
 

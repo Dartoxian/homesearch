@@ -1,9 +1,10 @@
 import {Point, Polygon} from "geojson";
 import {LngLatBounds} from "mapbox-gl";
-
-export const BASE_URL = `http://${window.location.hostname}:5000`;
+import {BASE_URL} from "./config";
+import {tryAuthorisedFetch} from "./users";
 
 export type HouseType = 'unknown' | 'flat' | 'detached' | 'bungalow' | 'semi_detached' | 'land' | 'terraced';
+export type SentimentType = 'favourite' | 'ignore';
 export const houseTypes: HouseType[] = ['unknown' , 'flat' , 'detached' , 'bungalow' , 'semi_detached' , 'land' , 'terraced']
 
 export interface HousePropertyMeta {
@@ -12,6 +13,7 @@ export interface HousePropertyMeta {
     primary_image_url: string
     price: number
     location: Point
+    sentiment_type?: SentimentType
     num_floors?: number
     num_bedrooms?: number
     num_bathrooms?: number
@@ -83,7 +85,7 @@ const convertBoundsToGeoJson = (bounds: LngLatBounds): Polygon => {
 }
 
 export function getProperties(bounds: LngLatBounds, after?: number, filters?: HousePropertyFilter): Promise<HousePropertyMeta[]> {
-    return fetch(BASE_URL + '/api/houses', {
+    return tryAuthorisedFetch(BASE_URL + '/api/houses', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -103,7 +105,7 @@ export function getProperties(bounds: LngLatBounds, after?: number, filters?: Ho
 }
 
 export function getHouse(house_id: number): Promise<HouseProperty> {
-    return fetch(BASE_URL + '/api/house', {
+    return tryAuthorisedFetch(BASE_URL + '/api/house', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
