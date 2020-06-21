@@ -35,6 +35,7 @@ export class HomesearchMapWithContext extends React.Component<{appContext: AppSt
 
     private mapRef = React.createRef<HTMLDivElement>();
     private homesearchMapLeaflet: HomesearchMapLeaflet;
+    private loadId = 0;
 
     constructor(props) {
         super(props);
@@ -159,14 +160,18 @@ export class HomesearchMapWithContext extends React.Component<{appContext: AppSt
         if (this.state.bounds === undefined) {
             return;
         }
-        this.loadPropertyDataForBounds();
-        this.loadSupermarketDataForBounds();
-        this.loadSurgeriesForBounds();
-        this.loadStationsForBounds();
+        this.loadId += 1;
+        this.loadPropertyDataForBounds(this.loadId);
+        this.loadSupermarketDataForBounds(this.loadId);
+        this.loadSurgeriesForBounds(this.loadId);
+        this.loadStationsForBounds(this.loadId);
         this.setState((state) => ({...state, loading: true}));
     }
 
-    loadPropertyDataForBounds = (from?: number) => {
+    loadPropertyDataForBounds = (loadId: number, from?: number) => {
+        if (loadId !== this.loadId) {
+            return;
+        }
         const {bounds, filters} = this.state;
         getProperties(bounds, from, filters).then((houses) => {
             this.homesearchMapLeaflet.addPoints(houses);
@@ -178,9 +183,12 @@ export class HomesearchMapWithContext extends React.Component<{appContext: AppSt
         });
     }
 
-    loadSupermarketDataForBounds = (from?: number) => {
+    loadSupermarketDataForBounds = (loadId: number, from?: number) => {
+        if (loadId !== this.loadId) {
+            return;
+        }
         const {bounds} = this.state;
-        getSupermarkets(bounds).then((supermarkets) => {
+        getSupermarkets(bounds, from).then((supermarkets) => {
             this.homesearchMapLeaflet.addSupermarkets(supermarkets);
             if (supermarkets.length == 5000) {
                 this.loadSupermarketDataForBounds(supermarkets[supermarkets.length - 1].supermarket_id)
@@ -188,9 +196,12 @@ export class HomesearchMapWithContext extends React.Component<{appContext: AppSt
         });
     }
 
-    loadSurgeriesForBounds = (from?: number) => {
+    loadSurgeriesForBounds = (loadId: number, from?: number) => {
+        if (loadId !== this.loadId) {
+            return;
+        }
         const {bounds} = this.state;
-        getSurgeries(bounds).then((surgeries) => {
+        getSurgeries(bounds, from).then((surgeries) => {
             this.homesearchMapLeaflet.addSurgeries(surgeries);
             if (surgeries.length == 5000) {
                 this.loadSurgeriesForBounds(surgeries[surgeries.length - 1].surgery_id)
@@ -198,9 +209,12 @@ export class HomesearchMapWithContext extends React.Component<{appContext: AppSt
         });
     }
 
-    loadStationsForBounds = (from?: number) => {
+    loadStationsForBounds = (loadId: number, from?: number) => {
+        if (loadId !== this.loadId) {
+            return;
+        }
         const {bounds} = this.state;
-        getStations(bounds).then((stations) => {
+        getStations(bounds, from).then((stations) => {
             this.homesearchMapLeaflet.addStations(stations);
             if (stations.length == 5000) {
                 this.loadStationsForBounds(stations[stations.length - 1].station_id)
