@@ -20,6 +20,12 @@ export const About = () => {
                     <li>NHS surgery locations from <ExA href={"https://www.nhs.uk/about-us/nhs-website-datasets/"}>NHS datasets</ExA></li>
                     <li>Floodplain data from <ExA href={"https://environment.data.gov.uk/"}>DEFRA</ExA></li>
                 </UL>
+
+                <ExA href={"https://zoopla.co.uk"}>
+                    <img src="https://www.zoopla.co.uk/static/images/mashery/powered-by-zoopla-150x73.png"
+                         width="150" height="73" title="Property information powered by Zoopla" alt="Property information powered by Zoopla"
+                    />
+                </ExA> 
             </div>
         </div>
     )

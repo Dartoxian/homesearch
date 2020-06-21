@@ -156,7 +156,7 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             labelStepSize={5000}
                             stepSize={100}
                             labelRenderer={distance => `${(distance / 1000).toFixed(1)}k`}
-                            onChange={this.handleFilterValueChange("max_distance_to_national_rail")}
+                            onChange={this.handleFilterValueChange("max_distance_to_city_rail")}
                         />
                     </FormGroup>
                 </div>
@@ -243,13 +243,16 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
 
     handleSubmitNewFilter = () => {
         const {onFiltersUpdate} = this.props;
-        const {filters, convenienceStoreDistanceEnabled, storeDistanceEnabled, surgeryDistanceEnabled} = this.state;
+        const {filters, convenienceStoreDistanceEnabled, storeDistanceEnabled, surgeryDistanceEnabled,
+            nationalRailDistanceEnabled, cityRailDistanceEnabled} = this.state;
 
         onFiltersUpdate({
             ...filters,
             max_distance_to_convenience: convenienceStoreDistanceEnabled ? filters.max_distance_to_convenience : undefined,
             max_distance_to_store: storeDistanceEnabled ? filters.max_distance_to_store : undefined,
             max_distance_to_surgery: surgeryDistanceEnabled ? filters.max_distance_to_surgery : undefined,
+            max_distance_to_national_rail: nationalRailDistanceEnabled ? filters.max_distance_to_national_rail : undefined,
+            max_distance_to_city_rail: cityRailDistanceEnabled ? filters.max_distance_to_city_rail : undefined,
         })
     }
 }
