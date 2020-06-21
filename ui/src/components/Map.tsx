@@ -368,7 +368,7 @@ class HomesearchMapLeaflet {
                 'type': 'fill',
                 'source': 'zone2-floods',
                 'source-layer': 'default',
-                'minzoom': 0,
+                'minzoom': 9,
                 'maxzoom': 22,
                 'paint': {
                     'fill-opacity': 0.1,
@@ -380,7 +380,7 @@ class HomesearchMapLeaflet {
                 'type': 'fill',
                 'source': 'zone3-floods',
                 'source-layer': 'default',
-                'minzoom': 0,
+                'minzoom': 9,
                 'maxzoom': 22,
                 'paint': {
                     'fill-opacity': 0.2,
