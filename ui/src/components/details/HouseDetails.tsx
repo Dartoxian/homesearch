@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Card, H3, Spinner, H5, Button, Tabs, Tab, Icon, UL} from "@blueprintjs/core";
+import {Card, H3, Spinner, H5, Button, Tabs, Tab, Icon, UL, AnchorButton, Tooltip} from "@blueprintjs/core";
 import {
     getHouse,
     getNearestSupermarkets,
@@ -13,6 +13,7 @@ import {Description} from "./Description";
 import {getFavourites, removeSentiment, setSentiment} from "../../services/users";
 import {AppState, withAppContext} from "../../models";
 import {KeyPoints} from "./KeyPoints";
+import {isUserLoggedIn} from "../../services/firebase";
 
 export interface HouseDetailsProps {
     appContext: AppState
@@ -59,19 +60,31 @@ export class HouseDetailsWithContext extends React.Component<HouseDetailsProps, 
                             </a>
                         </H3>
                         <div className={"controls"}>
-                            <Button
-                                minimal={true}
-                                icon={house.sentiment_type === "favourite" ? IconNames.STAR : IconNames.STAR_EMPTY}
-                                loading={processingSentiment}
-                                onClick={this.handleSentimentClick("favourite")}
-                            />
-                            <Button
-                                minimal={true}
-                                icon={IconNames.TRASH}
-                                active={house.sentiment_type === "ignore"}
-                                loading={processingSentiment}
-                                onClick={this.handleSentimentClick("ignore")}
-                            />
+                            <Tooltip
+                                content={"Login Required to Favourite properties"}
+                                disabled={isUserLoggedIn()}
+                            >
+                                <AnchorButton
+                                    minimal={true}
+                                    icon={house.sentiment_type === "favourite" ? IconNames.STAR : IconNames.STAR_EMPTY}
+                                    loading={processingSentiment}
+                                    onClick={this.handleSentimentClick("favourite")}
+                                    disabled={!isUserLoggedIn()}
+                                />
+                            </Tooltip>
+                            <Tooltip
+                                content={"Login Required to Hide properties"}
+                                disabled={isUserLoggedIn()}
+                            >
+                                <AnchorButton
+                                    minimal={true}
+                                    icon={IconNames.TRASH}
+                                    active={house.sentiment_type === "ignore"}
+                                    loading={processingSentiment}
+                                    onClick={this.handleSentimentClick("ignore")}
+                                    disabled={!isUserLoggedIn()}
+                                />
+                            </Tooltip>
                             <Button
                                 minimal={true}
                                 icon={IconNames.LOCATE}
