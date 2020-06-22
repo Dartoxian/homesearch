@@ -3,6 +3,7 @@ from datetime import datetime
 from metadata.nhs import get_distance_to_nearest_surgery
 from metadata.osm import get_distance_to_nearest_national_rail_station, get_distance_to_nearest_city_station
 from metadata.supermarkets import get_distance_to_nearest_convenience, get_distance_to_nearest_store
+from utils.features import get_features
 from utils.logging import get_logger
 from utils.models import HouseProperty
 from utils.sql import get_cursor
@@ -62,9 +63,19 @@ class Ingestor:
             " distance_to_nearest_store=%(distance_to_nearest_store)s,"
             " distance_to_nearest_surgery=%(distance_to_nearest_surgery)s,"
             " distance_to_national_rail_station=%(distance_to_national_rail_station)s,"
-            " distance_to_city_rail_station=%(distance_to_city_rail_station)s",
+            " distance_to_city_rail_station=%(distance_to_city_rail_station)s"
+            " RETURNING house_id",
             params,
         )
+
+        house_id = self._cur.fetchone()["house_id"]
+        self._cur.execute("DELETE FROM house_feature WHERE house_id=%s", (house_id,))
+        for feature in get_features(house.description):
+            self._cur.execute(
+                "INSERT INTO house_feature (house_id, feature) VALUES (%(house_id)s, %(feature)s)",
+                {"house_id": house_id, "feature": feature},
+            )
+
         self._ingested += 1
         if self._ingested % 1000 == 0:
             log.info(f"Ingested {self._ingested} files")

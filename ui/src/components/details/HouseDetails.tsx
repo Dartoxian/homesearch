@@ -101,7 +101,7 @@ export class HouseDetailsWithContext extends React.Component<HouseDetailsProps, 
                     <Card className={"content-wrapper"}>
                         <div className={'top-section'}>
                             <img src={house.primary_image_url} width={250} />
-                            <KeyPoints house={this.props.appContext.selectedHouse} />
+                            <KeyPoints house={this.state.house} />
                         </div>
                         <Tabs>
                             <Tab id="description" title="Description" panel={<Description text={!house?undefined:house.description}/>} />

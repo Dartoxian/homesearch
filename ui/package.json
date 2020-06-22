@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Dartoxian/homesearch#readme",
   "dependencies": {
     "@blueprintjs/core": "^3.28.2",
+    "@blueprintjs/select": "^3.13.3",
     "classnames": "^2.2.6",
     "firebase": "^7.15.3",
     "js-cookie": "^2.2.1",

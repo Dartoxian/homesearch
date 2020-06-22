@@ -1,9 +1,12 @@
 import * as React from 'react';
 import {HousePropertyFilter, HouseType, houseTypes} from "../services/houses";
-import {Button, Card, Checkbox, ControlGroup, FormGroup, NumberRange, RangeSlider, Slider} from "@blueprintjs/core";
+import {Button, Checkbox, ControlGroup, FormGroup, MenuItem, RangeSlider, Slider, Tag} from "@blueprintjs/core";
 import {Intent} from "@blueprintjs/core/lib/esm/common/intent";
+import {MultiSelect} from "@blueprintjs/select";
+import {AppState, withAppContext} from "../models";
 
 export interface FiltersProps {
+    appContext: AppState;
     initialFilter: HousePropertyFilter;
     onFiltersUpdate: (filters: HousePropertyFilter) => void;
 }
@@ -17,7 +20,10 @@ export interface FiltersState {
     surgeryDistanceEnabled: boolean;
 }
 
-export class Filters extends React.Component<FiltersProps, FiltersState> {
+const FeatureSelect = MultiSelect.ofType<string>();
+
+
+export class FiltersWithAppContext extends React.Component<FiltersProps, FiltersState> {
 
     constructor(props: FiltersProps) {
         super(props);
@@ -182,6 +188,30 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
                             onChange={this.handleFilterValueChange("max_distance_to_surgery")}
                         />
                     </FormGroup>
+                    <FormGroup
+                        label={"Features extracted from description"}
+                    >
+                        <FeatureSelect
+                            popoverProps={{minimal: true}}
+                            items={this.props.appContext.availableFeatures}
+                            selectedItems={this.state.filters.features}
+                            itemRenderer={(item, {modifiers, handleClick, index}) => (
+                                <MenuItem key={index} onClick={handleClick} active={modifiers.active} text={item} />)}
+                            onItemSelect={(item) => this.setState(state => ({
+                                ...state,
+                                filters: {
+                                    ...state.filters,
+                                    features: state.filters.features === undefined || !state.filters.features.includes(item)
+                                        ? [...(state.filters.features || []), item]
+                                        :  state.filters.features.filter((it) => it !== item)
+                                }
+                            }))}
+                            tagRenderer={(item) => (item)}
+                            tagInputProps={{onRemove: (item) => this.setState((state) => ({
+                                    ...state, filters: {...state.filters, features: state.filters.features.filter((it) => it !== item)}
+                            }))}}
+                        />
+                    </FormGroup>
                 </div>
                 <FormGroup
                     label={"Property Type"}
@@ -256,3 +286,5 @@ export class Filters extends React.Component<FiltersProps, FiltersState> {
         })
     }
 }
+
+export const Filters = withAppContext(FiltersWithAppContext)

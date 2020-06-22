@@ -12,6 +12,7 @@ const DescriptionParagraph: React.FC<{text: string}> = ({text}) => {
     parsed = parsed.replace(/(acres?)/i, "<b>$1</b>");
     parsed = parsed.replace(/(in\s+need\s+of)/i, "<b>$1</b>");
     parsed = parsed.replace(/(En-suite)/i, "<b>$1</b>");
+    parsed = parsed.replace(/(garage)/i, "<b>$1</b>");
 
     return <p dangerouslySetInnerHTML={{__html: parsed}}/>
 }

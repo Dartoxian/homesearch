@@ -18,7 +18,8 @@ export interface HousePropertyMeta {
     num_bedrooms?: number
     num_bathrooms?: number
     house_type?: HouseType,
-    house_type_full: string
+    house_type_full: string,
+    features: string[],
 }
 
 
@@ -55,6 +56,7 @@ export interface HousePropertyFilter {
     max_distance_to_surgery?: number;
     max_distance_to_national_rail?: number;
     max_distance_to_city_rail?: number;
+    features?: string[];
 }
 
 export interface NhsSurgery {
@@ -191,4 +193,15 @@ export function getStations(bounds: LngLatBounds, after?: number): Promise<RailS
             ...it,
             location: JSON.parse(it.location),
         })));
+}
+
+export function getFeatures(): Promise<string[]> {
+    return fetch(BASE_URL + '/api/features', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        }
+    })
+        .then(r => r.json());
 }

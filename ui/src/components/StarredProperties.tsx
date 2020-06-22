@@ -25,7 +25,7 @@ const HousePreview: React.FC<{house: HousePropertyMeta, getFocus: () =>  void}> 
                 </div>
             </div>
             <div className={"summary"}>
-                <img src={house.primary_image_url} width={100}/>
+                <div><img src={house.primary_image_url} width={100}/></div>
                 <KeyPoints house={house} />
             </div>
         </Card>

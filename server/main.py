@@ -50,24 +50,28 @@ def get_houses():
         pass
 
     query = (
+        "WITH features AS (SELECT house_id, ARRAY_AGG(feature) AS features FROM house_feature GROUP BY house_id) "
         "SELECT houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source, house_type, house_type_full"
+        " num_bedrooms, num_bathrooms, source, house_type, house_type_full, features.features AS features"
     )
     params = ()
     if user_email is not None:
         query += (
             ", user_sentiment.type as sentiment_type"
-            " FROM HOUSES LEFT JOIN user_sentiment"
+            " FROM houses LEFT JOIN features ON houses.house_id = features.house_id LEFT JOIN user_sentiment"
             " ON houses.house_id = user_sentiment.house_id AND user_sentiment.user_email=%s"
-            " WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
         )
-        params = (
-            user_email,
-            request_params["box"],
-        )
+        params = (user_email,)
     else:
-        query += " FROM houses WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
-        params = (request_params["box"],)
+        query += " FROM houses LEFT JOIN features ON houses.house_id = features.house_id"
+
+    if "filters" in request_params:
+        if "features" in request_params["filters"] and len(request_params["filters"]["features"]) > 0:
+            query += " JOIN house_feature ON houses.house_id = house_feature.house_id AND house_feature.feature IN %s"
+            params += (tuple(request_params["filters"]["features"]),)
+
+    query += " WHERE ST_Within(location, ST_GeomFromGeoJSON(%s))"
+    params += (request_params["box"],)
 
     if "after" in request_params:
         query += " AND house_id>%s"
@@ -112,21 +116,23 @@ def get_house():
         raise BadRequest("A house id must be specified to load a particular house")
 
     query = (
+        "WITH features AS (SELECT house_id, ARRAY_AGG(feature) AS features FROM house_feature GROUP BY house_id) "
         "SELECT houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source, source_url, description, house_type, house_type_full"
+        " num_bedrooms, num_bathrooms, source, source_url,"
+        " description, house_type, house_type_full, features.features AS features"
     )
 
     try:
         user_email = verify_token()
         query += (
             ", user_sentiment.type as sentiment_type"
-            " FROM houses LEFT JOIN user_sentiment"
+            " FROM houses LEFT JOIN features ON houses.house_id = features.house_id LEFT JOIN user_sentiment"
             " ON houses.house_id = user_sentiment.house_id AND user_sentiment.user_email=%s"
             " WHERE houses.house_id=%s"
         )
         params = (user_email, request_params["house_id"])
     except HTTPException:
-        query += " FROM houses WHERE houses.house_id=%s"
+        query += " FROM houses LEFT JOIN features ON houses.house_id = features.house_id WHERE houses.house_id=%s"
         params = (request_params["house_id"],)
 
     cur = get_cursor()
@@ -208,6 +214,14 @@ def get_stations():
     cur = get_cursor()
     cur.execute(query, params)
     return jsonify([dict(row) for row in cur.fetchall()])
+
+
+@app.route("/api/features", methods=["GET"])
+def get_features():
+    query = "SELECT DISTINCT feature FROM house_feature"
+    cur = get_cursor()
+    cur.execute(query)
+    return jsonify([row["feature"] for row in cur.fetchall()])
 
 
 if __name__ == "__main__":

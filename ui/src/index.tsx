@@ -16,6 +16,7 @@ import {useEffect, useState} from "react";
 import * as firebase from 'firebase/app';
 import 'firebase/auth';
 import {getFavourites} from "./services/users";
+import {getFeatures} from "./services/houses";
 
 ReactGA.initialize('UA-170171680-1');
 ReactGA.pageview(window.location.pathname + window.location.search);
@@ -24,6 +25,7 @@ const App = () => {
     const [appState, dispatch] = useState<AppState>({
         user: null,
         favourites: [],
+        availableFeatures: [],
         onUpdateFavourites: favourites => dispatch(state => ({...state, favourites})),
         onHouseSelected: selectedHouse => dispatch(state => ({...state, selectedHouse})),
         onFocusPoint: focusPoint => dispatch(state => ({...state, focusPoint}))
@@ -33,6 +35,7 @@ const App = () => {
             dispatch((state) => ({...state, user}))
         });
         getFavourites().then((favourites) => dispatch(state => ({...state, favourites})));
+        getFeatures().then((availableFeatures) => dispatch(state => ({...state, availableFeatures})))
     }, []);
 
     return (

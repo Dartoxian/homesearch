@@ -9,6 +9,7 @@ export interface AppState {
     favourites: HousePropertyMeta[];
     selectedHouse?: HousePropertyMeta;
     focusPoint?: Point;
+    availableFeatures: string[];
 
     onUpdateFavourites: (newFavourites: HousePropertyMeta[]) => void;
     onHouseSelected: (selectedHouse?: HousePropertyMeta) => void;
@@ -17,7 +18,7 @@ export interface AppState {
 
 export const AppContext = React.createContext<AppState>({
     user: null, favourites: [], onUpdateFavourites: () => {}, onHouseSelected: () => {},
-    onFocusPoint: () => {},
+    onFocusPoint: () => {}, availableFeatures: []
 });
 
 export const withAppContext = (component: React.ComponentClass) => {
