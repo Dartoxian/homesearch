@@ -20,12 +20,12 @@ export interface HousePropertyMeta {
     house_type?: HouseType,
     house_type_full: string,
     features: string[],
+    source_url: string
 }
 
 
 export interface HouseProperty extends HousePropertyMeta {
     source: string
-    source_url: string
     description: string
 }
 

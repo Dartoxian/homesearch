@@ -52,7 +52,7 @@ def get_houses():
     query = (
         "WITH features AS (SELECT house_id, ARRAY_AGG(feature) AS features FROM house_feature GROUP BY house_id) "
         "SELECT houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source, house_type, house_type_full, features.features AS features"
+        " num_bedrooms, num_bathrooms, source, source_url, house_type, house_type_full, features.features AS features"
     )
     params = ()
     if user_email is not None:

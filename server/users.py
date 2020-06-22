@@ -32,7 +32,7 @@ def get_favourites():
     cur.execute(
         "WITH features AS (SELECT house_id, ARRAY_AGG(feature) AS features FROM house_feature GROUP BY house_id) "
         "SELECT houses.house_id, title, primary_image_url, price, ST_AsGeoJSON(location) as location, num_floors,"
-        " num_bedrooms, num_bathrooms, source, house_type, house_type_full, features.features AS features"
+        " num_bedrooms, num_bathrooms, source, source_url, house_type, house_type_full, features.features AS features"
         " FROM user_sentiment JOIN houses USING (house_id) LEFT JOIN features ON houses.house_id = features.house_id"
         " WHERE user_email=%s AND type='favourite'",
         (user_email,),

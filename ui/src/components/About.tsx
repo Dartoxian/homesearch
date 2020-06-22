@@ -1,11 +1,6 @@
 import React from "react";
-import {Card, H3, UL} from "@blueprintjs/core";
-
-const ExA: React.FC<{href: string}> = ({href, children}) => {
-    return (
-        <a href={href} rel={"noreferrer noopener"} target={"_blank"}>{children}</a>
-    )
-}
+import {H3, UL} from "@blueprintjs/core";
+import {ExA} from "./common";
 
 export const About = () => {
     return (

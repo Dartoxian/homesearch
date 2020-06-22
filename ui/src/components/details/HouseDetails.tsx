@@ -14,6 +14,7 @@ import {getFavourites, removeSentiment, setSentiment} from "../../services/users
 import {AppState, withAppContext} from "../../models";
 import {KeyPoints} from "./KeyPoints";
 import {isUserLoggedIn} from "../../services/firebase";
+import {ExA} from "../common";
 
 export interface HouseDetailsProps {
     appContext: AppState
@@ -55,9 +56,9 @@ export class HouseDetailsWithContext extends React.Component<HouseDetailsProps, 
                 <>
                     <div className={"header"}>
                         <H3>
-                            <a href={house.source_url} referrerPolicy={"no-referrer"} rel="nofollow noopener noreferrer" target={"_blank"}>
+                            <ExA href={house.source_url}>
                                 {house.title} <Icon icon={IconNames.SHARE} iconSize={Icon.SIZE_LARGE}/>
-                            </a>
+                            </ExA>
                         </H3>
                         <div className={"controls"}>
                             <Tooltip
