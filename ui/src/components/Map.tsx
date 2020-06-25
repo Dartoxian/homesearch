@@ -72,8 +72,8 @@ export class HomesearchMapWithContext extends React.Component<{appContext: AppSt
         const {appContext: {user, focusPoint}} = this.props;
         const {bounds, zoom, filters} = this.state;
         if (bounds !== prevState.bounds || zoom != prevState.zoom) {
-            Cookies.set("center", JSON.stringify(bounds.getCenter()))
-            Cookies.set("zoom", JSON.stringify(zoom))
+            Cookies.set("center", JSON.stringify(bounds.getCenter()), {expires: 30})
+            Cookies.set("zoom", JSON.stringify(zoom), {expires: 30})
             this.loadDataForBounds();
             return
         }
