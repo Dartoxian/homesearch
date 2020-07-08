@@ -78,7 +78,7 @@ export class HomesearchMapWithContext extends React.Component<{appContext: AppSt
             return
         }
         if (filters !== prevState.filters) {
-            Cookies.set("filters", JSON.stringify(filters))
+            Cookies.set("filters", JSON.stringify(filters), {expires: 30})
             this.homesearchMapLeaflet.clearPoints();
             this.loadDataForBounds();
             return
