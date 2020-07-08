@@ -38,6 +38,23 @@ services:
       - "./zoopla:/homesearch/zoopla:ro"
       - "./utils:/homesearch/utils:ro"
       - "./metadata:/homesearch/metadata:ro"
+  homesearch-zoopla-fetch:
+    build:
+      dockerfile: homesearch.dockerfile
+      context: ./
+    environment:
+      - PYTHONPATH=./
+      - FLASK_ENV=development
+      - DB_HOST=db
+    depends_on:
+      - db
+    command: ["python", "-u", "./zoopla/fetch.py"]
+    restart: always
+    volumes:
+      - "./data:/homesearch/data"
+      - "./zoopla:/homesearch/zoopla:ro"
+      - "./utils:/homesearch/utils:ro"
+      - "./metadata:/homesearch/metadata:ro"
   ui:
     build:
       context: ./ui
